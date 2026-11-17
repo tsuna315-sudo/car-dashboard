@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DriveAssist OS - iPad 車載運転支援コックピット (Beta)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono (視認性の高いデジタル数値用) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome (アイコン用) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cockpit: {
+                            bg: '#05070A',
+                            card: '#0D1117',
+                            border: '#1E2633',
+                            cyan: '#00E5FF',
+                            amber: '#FFB300',
+                            emerald: '#00E676',
+                            danger: '#FF3D00'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* コックピット専用の微調整とスクロール抑制 */
+        body {
+            background-color: #05070A;
+            color: #F3F4F6;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        /* 発光エフェクト */
+        .glow-cyan {
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+        }
+        .glow-emerald {
+            text-shadow: 0 0 18px rgba(0, 230, 118, 0.4);
+        }
+        .glow-amber {
+            text-shadow: 0 0 18px rgba(255, 179, 0, 0.4);
+        }
+        /* 運転中ロック時のオーバーレイ保護 */
+        .locked-overlay {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-4 lg:p-6 bg-cockpit-bg">
+
+    <!-- ==================== トップステータスバー ==================== -->
+    <header class="w-full flex flex-wrap items-center justify-between gap-3 bg-cockpit-card border border-cockpit-border rounded-2xl px-4 py-3 shadow-lg">
+        <!-- ブランド & システム状態 -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cockpit-cyan">
+                <i class="fa-solid fa-gauge-high text-xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-base sm:text-lg tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">BETA</span></h1>
+                </div>
+                <p id="system-status-text" class="text-xs text-gray-400 flex items-center gap-1.5">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                    <span id="status-label">DEMO SIMULATION ACTIVE (HYBRID MODE)</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- データソース切り替えスイッチ (DEMO / GPS / OBD2 BLE) -->
+        <div class="flex items-center gap-2 bg-black/60 p-1.5 rounded-xl border border-cockpit-border">
+            <button id="btn-mode-demo" onclick="switchDataMode('DEMO')" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all bg-cockpit-cyan text-black shadow">
+                <i class="fa-solid fa-microchip mr-1"></i>デモモード
+            </button>
+            <button id="btn-mode-gps" onclick="switchDataMode('GPS')" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all">
+                <i class="fa-solid fa-location-crosshairs mr-1"></i>GPS実測
+            </button>
+            <button id="btn-mode-obd" onclick="switchDataMode('OBD')" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all">
+                <i class="fa-brands fa-bluetooth-b mr-1"></i>OBD2実機
+            </button>
+        </div>
+
+        <!-- コントロールボタン群 (ロック・設定・フルスクリーン) -->
+        <div class="flex items-center gap-2">
+            <!-- OBD2接続アクションボタン (OBDモード時のみ表示) -->
+            <button id="btn-obd-connect" onclick="connectObdAdapter()" class="hidden px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all shadow-lg flex items-center gap-2">
+                <i class="fa-solid fa-plug"></i><span>アダプター接続</span>
+            </button>
+
+            <!-- 誤タップ防止ロック -->
+            <button id="btn-drive-lock" onclick="toggleDriveLock()" class="px-3.5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-semibold text-xs sm:text-sm transition-all flex items-center gap-2" title="走行中の誤操作防止ロック">
+                <i id="lock-icon" class="fa-solid fa-lock-open text-cockpit-cyan"></i>
+                <span id="lock-text" class="hidden sm:inline">操作ロック</span>
+            </button>
+
+            <!-- 設定モーダル開く -->
+            <button id="btn-open-settings" onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 transition-all" title="目的地・API設定">
+                <i class="fa-solid fa-sliders text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== 警告バナー (2時間連続運転アラート等) ==================== -->
+    <div id="alert-banner" class="hidden w-full my-2 bg-amber-950/90 border border-cockpit-amber rounded-xl px-4 py-2.5 flex items-center justify-between text-amber-200 shadow-lg">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-cockpit-amber text-xl animate-bounce"></i>
+            <span id="alert-message" class="font-bold text-sm sm:text-base">連続走行時間が2時間を超えました。安全のためSA/PA等で休憩を取ってください。</span>
+        </div>
+        <button onclick="dismissAlert()" class="px-3 py-1 bg-amber-800/60 hover:bg-amber-700 rounded-lg text-xs font-bold text-white">確認</button>
+    </div>
+
+    <!-- ==================== メインコックピットグリッド ==================== -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 my-3">
+
+        <!-- 【左メインエリア：車両情報 & 最適速度ガイダンス (7カラム)】 -->
+        <section class="lg:col-span-7 flex flex-col justify-between bg-cockpit-card border border-cockpit-border rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+            
+            <!-- 上部：最適巡航速度レンジ ガイダンスバー -->
+            <div class="bg-black/50 border border-cockpit-border rounded-2xl p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">最適巡航速度レンジ</span>
+                        <span id="speed-advice-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-cockpit-emerald border border-emerald-500/40">
+                            OPTIMAL ECO PACE
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        道路制限目安: <span id="display-speed-limit" class="font-mono font-bold text-white">60</span> km/h
+                    </div>
+                </div>
+
+                <div class="flex items-baseline justify-between gap-4">
+                    <div class="flex items-baseline gap-2">
+                        <span id="optimal-speed-min" class="font-mono text-2xl sm:text-3xl font-extrabold text-cockpit-emerald">52</span>
+                        <span class="text-gray-500 font-bold">〜</span>
+                        <span id="optimal-speed-max" class="font-mono text-2xl sm:text-3xl font-extrabold text-cockpit-emerald">58</span>
+                        <span class="text-xs sm:text-sm text-gray-400 font-semibold">km/h</span>
+                    </div>
+                    <p id="speed-advice-text" class="text-xs sm:text-sm text-gray-300 text-right">
+                        定刻到着・高燃費に最適な速度域です
+                    </p>
+                </div>
+
+                <!-- 速度レンジ視覚化バー -->
+                <div class="mt-3 relative h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+                    <!-- 最適ゾーンハイライト -->
+                    <div id="optimal-zone-bar" class="absolute top-0 bottom-0 bg-emerald-500/30 border-x border-cockpit-emerald transition-all duration-300" style="left: 43%; width: 10%;"></div>
+                    <!-- 現在速度マーカー -->
+                    <div id="current-speed-marker" class="absolute top-0 bottom-0 w-1.5 bg-cockpit-cyan shadow-[0_0_10px_#00E5FF] transition-all duration-200" style="left: 46%;"></div>
+                </div>
+            </div>
+
+            <!-- 中央：巨大デジタルスピードメーター -->
+            <div class="my-4 sm:my-6 flex flex-col items-center justify-center relative">
+                <div class="flex items-center gap-3 mb-1">
+                    <span id="ev-mode-badge" class="px-3 py-1 rounded-full text-xs font-extrabold tracking-widest bg-cyan-500/20 text-cockpit-cyan border border-cyan-400/50 transition-opacity duration-300">
+                        <i class="fa-solid fa-leaf mr-1"></i>EV DRIVE
+                    </span>
+                    <span class="text-xs font-mono text-gray-500 uppercase tracking-widest">VEHICLE SPEED</span>
+                </div>
+
+                <div class="flex items-baseline justify-center">
+                    <span id="val-speed" class="font-mono text-8xl sm:text-9xl font-extrabold tracking-tighter text-white glow-cyan tabular-nums leading-none">
+                        55
+                    </span>
+                    <span class="ml-3 text-xl sm:text-2xl font-bold text-gray-400">km/h</span>
+                </div>
+            </div>
+
+            <!-- 下部：ハイブリッドパワートレイン & 車両テレメトリ (4グリッド) -->
+            <div class="space-y-3">
+                <!-- エンジン回転数 (RPM) バー -->
+                <div class="bg-black/40 border border-cockpit-border rounded-2xl p-3.5">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate text-cockpit-cyan"></i> ENGINE RPM
+                        </span>
+                        <div class="font-mono text-base sm:text-lg font-bold text-white tabular-nums">
+                            <span id="val-rpm">0</span> <span class="text-xs text-gray-400 font-normal">rpm</span>
+                        </div>
+                    </div>
+                    <div class="w-full h-2.5 bg-gray-900 rounded-full overflow-hidden">
+                        <div id="bar-rpm" class="h-full bg-gradient-to-r from-cockpit-cyan via-cockpit-emerald to-cockpit-amber transition-all duration-200" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- 3つのサブメーター (冷却水温 / 12V補機バッテリー / HV駆動バッテリーSOC) -->
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- 冷却水温 -->
+                    <div class="bg-black/40 border border-cockpit-border rounded-2xl p-3 flex flex-col justify-between">
+                        <span class="text-[11px] sm:text-xs font-bold text-gray-400 flex items-center gap-1">
+                            <i class="fa-solid fa-temperature-half text-cockpit-cyan"></i> 冷却水温
+                        </span>
+                        <div class="mt-1 font-mono text-xl sm:text-2xl font-bold text-white tabular-nums">
+                            <span id="val-coolant">84</span><span class="text-xs text-gray-400 ml-0.5">°C</span>
+                        </div>
+                    </div>
+
+                    <!-- 12V補機電圧 -->
+                    <div class="bg-black/40 border border-cockpit-border rounded-2xl p-3 flex flex-col justify-between">
+                        <span class="text-[11px] sm:text-xs font-bold text-gray-400 flex items-center gap-1">
+                            <i class="fa-solid fa-car-battery text-cockpit-amber"></i> 補機電圧
+                        </span>
+                        <div class="mt-1 font-mono text-xl sm:text-2xl font-bold text-white tabular-nums">
+                            <span id="val-voltage">14.1</span><span class="text-xs text-gray-400 ml-0.5">V</span>
+                        </div>
+                    </div>
+
+                    <!-- HVバッテリー残量 (SOC) -->
+                    <div class="bg-black/40 border border-cockpit-border rounded-2xl p-3 flex flex-col justify-between">
+                        <span class="text-[11px] sm:text-xs font-bold text-gray-400 flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-cockpit-emerald"></i> HV電池残量
+                        </span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <div class="font-mono text-xl sm:text-2xl font-bold text-cockpit-emerald tabular-nums">
+                                <span id="val-hv-soc">68</span><span class="text-xs text-gray-400 ml-0.5">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 【右エリア：ナビ・時間・天気パネル (5カラム)】 -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- 1. 目的地・到着予定・残り時間カード -->
+            <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-5 shadow-xl flex-1 flex flex-col justify-between">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-cockpit-cyan flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot"></i> DESTINATION
+                        </span>
+                        <h2 id="dest-name" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5 line-clamp-1">
+                            名古屋駅（桜通口）
+                        </h2>
+                    </div>
+                    <button id="btn-edit-dest" onclick="openSettingsModal()" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 text-xs font-bold text-gray-300 transition-all shrink-0">
+                        変更
+                    </button>
+                </div>
+
+                <!-- 到着予定時刻 (ETA) & 残り時間 & 残り距離 -->
+                <div class="grid grid-cols-3 gap-2 my-4 bg-black/50 border border-cockpit-border rounded-2xl p-3.5">
+                    <div>
+                        <span class="text-[11px] text-gray-400 font-semibold block">到着予定 (ETA)</span>
+                        <span id="val-eta" class="font-mono text-2xl sm:text-3xl font-extrabold text-cockpit-cyan tabular-nums">22:15</span>
+                    </div>
+                    <div class="border-x border-cockpit-border px-2">
+                        <span class="text-[11px] text-gray-400 font-semibold block">残り時間</span>
+                        <span id="val-rem-time" class="font-mono text-2xl sm:text-3xl font-extrabold text-white tabular-nums">38<span class="text-xs font-sans font-normal text-gray-400 ml-0.5">分</span></span>
+                    </div>
+                    <div class="pl-1">
+                        <span class="text-[11px] text-gray-400 font-semibold block">残り距離</span>
+                        <span id="val-rem-dist" class="font-mono text-2xl sm:text-3xl font-extrabold text-white tabular-nums">34.5<span class="text-xs font-sans font-normal text-gray-400 ml-0.5">km</span></span>
+                    </div>
+                </div>
+
+                <!-- 目的地進捗プログレスバー -->
+                <div>
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>ルート進捗</span>
+                        <span id="val-progress-pct" class="font-mono font-bold text-gray-300">24%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                        <div id="bar-route-progress" class="h-full bg-cockpit-cyan transition-all duration-500" style="width: 24%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 連続走行時間タイマーカード -->
+            <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-5 shadow-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-stopwatch text-cockpit-amber"></i> 連続走行時間 (休憩目安: 2h)
+                        </span>
+                        <div id="val-drive-timer" class="font-mono text-3xl sm:text-4xl font-extrabold text-white tabular-nums mt-1">
+                            00:42:18
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2" id="timer-controls">
+                        <button id="btn-timer-toggle" onclick="toggleDriveTimer()" class="w-12 h-12 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-cockpit-emerald flex items-center justify-center text-lg transition-all" title="開始 / 一時停止">
+                            <i id="timer-toggle-icon" class="fa-solid fa-pause"></i>
+                        </button>
+                        <button onclick="resetDriveTimer()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 flex items-center justify-center text-lg transition-all" title="リセット">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- 2時間休憩ゲージ -->
+                <div class="mt-3">
+                    <div class="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden">
+                        <div id="bar-fatigue" class="h-full bg-cockpit-emerald transition-all duration-500" style="width: 35%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 目的地の天気予報カード -->
+            <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud-sun text-cockpit-cyan"></i> 目的地の天気 & 到着時予報
+                    </span>
+                    <span id="weather-source-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400">
+                        DEMO FORECAST
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 bg-black/40 border border-cockpit-border rounded-2xl p-3.5">
+                    <div class="flex items-center gap-3.5">
+                        <div id="weather-icon-box" class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-2xl text-cockpit-cyan">
+                            <i id="weather-icon" class="fa-solid fa-moon"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="weather-temp" class="font-mono text-2xl sm:text-3xl font-extrabold text-white">14°C</span>
+                                <span id="weather-desc" class="text-sm font-bold text-gray-300">晴れ</span>
+                            </div>
+                            <p id="weather-arrival-note" class="text-xs text-cockpit-cyan mt-0.5">
+                                到着予定時刻も天候安定・路面良好
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right border-l border-cockpit-border pl-3">
+                        <span class="text-[11px] text-gray-400 block">降水確率</span>
+                        <span id="weather-pop" class="font-mono text-lg sm:text-xl font-bold text-white">10%</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- ==================== 設定・目的地・OBDログ モーダル ==================== -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cockpit-card border border-cockpit-border rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-cockpit-border pb-4 mb-5">
+                <h3 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cockpit-cyan"></i> 目的地・API・システム設定
+                </h3>
+                <button onclick="closeSettingsModal()" class="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- プリセット目的地 -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">クイック目的地プリセット</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button onclick="applyDestinationPreset('名古屋駅（桜通口）', 34.5, 60, 35.1709, 136.8815)" class="p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950 border border-gray-700 hover:border-cockpit-cyan text-left transition-all">
+                            <div class="text-xs font-bold text-white">名古屋駅</div>
+                            <div class="text-[11px] text-gray-400">34.5 km / 制限60</div>
+                        </button>
+                        <button onclick="applyDestinationPreset('中部国際空港セントレア', 62.0, 80, 34.8584, 136.8054)" class="p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950 border border-gray-700 hover:border-cockpit-cyan text-left transition-all">
+                            <div class="text-xs font-bold text-white">セントレア空港</div>
+                            <div class="text-[11px] text-gray-400">62.0 km / 高速80</div>
+                        </button>
+                        <button onclick="applyDestinationPreset('新東名 浜松SA', 115.0, 100, 34.8194, 137.7347)" class="p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950 border border-gray-700 hover:border-cockpit-cyan text-left transition-all">
+                            <div class="text-xs font-bold text-white">新東名 浜松SA</div>
+                            <div class="text-[11px] text-gray-400">115.0 km / 高速100</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- カスタム目的地入力 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-bold text-gray-400 mb-1">目的地名</label>
+                        <input id="input-dest-name" type="text" value="名古屋駅（桜通口）" class="w-full bg-black border border-cockpit-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cockpit-cyan">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">残り距離 (km)</label>
+                        <input id="input-rem-dist" type="number" step="0.5" value="34.5" class="w-full bg-black border border-cockpit-border rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-cockpit-cyan">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">道路制限速度目安 (km/h)</label>
+                        <input id="input-speed-limit" type="number" step="10" value="60" class="w-full bg-black border border-cockpit-border rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-cockpit-cyan">
+                    </div>
+                </div>
+
+                <!-- OpenWeatherMap API 設定 (任意) -->
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-cockpit-cyan">OpenWeatherMap API 連携 (任意)</span>
+                        <span class="text-[11px] text-gray-500">未入力時はデモ予報を表示</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">API Key</label>
+                        <input id="input-owm-key" type="password" placeholder="例: a1b2c3d4e5f6..." class="w-full bg-cockpit-bg border border-cockpit-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cockpit-cyan">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">目的地 緯度 (Lat)</label>
+                            <input id="input-dest-lat" type="number" step="0.0001" value="35.1709" class="w-full bg-cockpit-bg border border-cockpit-border rounded-xl px-3 py-2 text-xs text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">目的地 経度 (Lon)</label>
+                            <input id="input-dest-lon" type="number" step="0.0001" value="136.8815" class="w-full bg-cockpit-bg border border-cockpit-border rounded-xl px-3 py-2 text-xs text-white font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OBD2 通信デバッグコンソール -->
+                <div class="bg-black/70 border border-cockpit-border rounded-2xl p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-bold text-gray-400">OBD2 / システム通信ログ</span>
+                        <span class="text-[10px] text-gray-500">iPadでのBLE利用は「Bluefy」ブラウザ推奨</span>
+                    </div>
+                    <div id="obd-debug-log" class="font-mono text-[11px] text-emerald-400 h-20 overflow-y-auto bg-black p-2 rounded-lg border border-gray-900">
+                        [SYSTEM] DriveAssist OS Beta initialized.<br>
+                        [PROVIDER] Ready. Switch to OBD2 mode after pairing ELM327 BLE adapter.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeSettingsModal()" class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm font-bold text-gray-300">
+                    キャンセル
+                </button>
+                <button onclick="saveSettings()" class="px-5 py-2.5 rounded-xl bg-cockpit-cyan hover:bg-cyan-400 text-sm font-extrabold text-black shadow-lg">
+                    設定を反映する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JavaScript: データプロバイダー & コックピット制御 ==================== -->
+    <script>
+        /**
+         * ログ出力ユーティリティ
+         */
+        function logSystem(msg) {
+            const logEl = document.getElementById('obd-debug-log');
+            if (!logEl) return;
+            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+            logEl.innerHTML += `[${time}] ${msg}<br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        /**
+         * アプリケーション全体状態 (State)
+         */
+        const appState = {
+            mode: 'DEMO', // 'DEMO' | 'GPS' | 'OBD'
+            isLocked: false,
+            vehicle: {
+                speed: 55,       // km/h
+                rpm: 0,          // rpm (0 = EV走行)
+                coolant: 84,     // °C
+                voltage: 14.1,   // V
+                hvSoc: 68        // %
+            },
+            navigation: {
+                destName: '名古屋駅（桜通口）',
+                totalDistance: 45.0,
+                remainingDistance: 34.5,
+                speedLimit: 60,
+                lat: 35.1709,
+                lon: 136.8815
+            },
+            timer: {
+                elapsedSeconds: 2538, // 初期デモ値: 42分18秒
+                isRunning: true,
+                alertDismissed: false
+            },
+            weather: {
+                apiKey: '',
+                temp: 14,
+                desc: '晴れ',
+                pop: 10,
+                iconClass: 'fa-moon',
+                note: '到着予定時刻も天候安定・路面良好',
+                isRealData: false
+            }
+        };
+
+        /**
+         * 1. デモデータプロバイダー (ハイブリッド車挙動シミュレーター)
+         */
+        class DemoVehicleProvider {
+            constructor() {
+                this.tickCount = 0;
+                this.targetSpeed = 56;
+                this.evMode = true;
+            }
+
+            update() {
+                this.tickCount++;
+                // 約8秒ごとに目標巡航速度を緩やかに変化させる
+                if (this.tickCount % 16 === 0) {
+                    const base = appState.navigation.speedLimit;
+                    const variation = (Math.random() - 0.45) * 14;
+                    this.targetSpeed = Math.max(0, Math.min(base + 12, Math.round(base - 4 + variation)));
+                }
+
+                // 現在速度を目標速度へ滑らかに追従
+                const diff = this.targetSpeed - appState.vehicle.speed;
+                appState.vehicle.speed = Math.max(0, Math.round((appState.vehicle.speed + diff * 0.15) * 10) / 10);
+
+                // ハイブリッド特有のEV走行 / エンジン稼働切り替えロジック
+                // 速度が58km/h超、またはHV電池残量が45%未満、または加速中はエンジン始動
+                if (appState.vehicle.speed > 58 || appState.vehicle.hvSoc < 45 || diff > 3.5) {
+                    this.evMode = false;
+                } else if (appState.vehicle.speed <= 52 && appState.vehicle.hvSoc > 55) {
+                    this.evMode = true;
+                }
+
+                if (this.evMode || appState.vehicle.speed === 0) {
+                    appState.vehicle.rpm = 0;
+                    // EV走行中はHVバッテリーが微減
+                    if (this.tickCount % 20 === 0 && appState.vehicle.speed > 0) {
+                        appState.vehicle.hvSoc = Math.max(30, appState.vehicle.hvSoc - 1);
+                    }
+                } else {
+                    // エンジン稼働中の回転数計算
+                    const baseRpm = 1150 + appState.vehicle.speed * 16 + (Math.random() * 80 - 40);
+                    appState.vehicle.rpm = Math.round(baseRpm);
+                    // エンジン稼働中は充電されHVバッテリー微増
+                    if (this.tickCount % 15 === 0) {
+                        appState.vehicle.hvSoc = Math.min(85, appState.vehicle.hvSoc + 1);
+                    }
+                }
+
+                // 水温・電圧の微細な揺らぎ
+                appState.vehicle.coolant = Math.round(83 + Math.sin(this.tickCount * 0.1) * 2);
+                appState.vehicle.voltage = (14.1 + Math.cos(this.tickCount * 0.2) * 0.1).toFixed(1);
+            }
+        }
+
+        /**
+         * 2. GPS実測速度プロバイダー (Geolocation API)
+         */
+        class GpsVehicleProvider {
+            constructor() {
+                this.watchId = null;
+            }
+
+            start() {
+                if (!('geolocation' in navigator)) {
+                    logSystem('[GPS] Geolocation API is not supported in this browser.');
+                    return;
+                }
+                logSystem('[GPS] Starting high-accuracy GPS speed tracking...');
+                this.watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        // coords.speed は m/s で返るため 3.6倍して km/h に変換
+                        const speedMps = pos.coords.speed;
+                        if (speedMps !== null && !isNaN(speedMps)) {
+                            appState.vehicle.speed = Math.round(speedMps * 3.6);
+                        } else {
+                            appState.vehicle.speed = 0;
+                        }
+                        // GPSモードではOBD項目は取得できないため基準値を表示
+                        appState.vehicle.rpm = 0;
+                    },
+                    (err) => {
+                        logSystem(`[GPS ERROR] ${err.message}`);
+                    },
+                    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+                );
+            }
+
+            stop() {
+                if (this.watchId !== null) {
+                    navigator.geolocation.clearWatch(this.watchId);
+                    this.watchId = null;
+                }
+            }
+        }
+
+        /**
+         * 3. OBD2 BLE実機プロバイダー (Web Bluetooth API / ELM327互換)
+         * Veepeak OBDCheck BLE+, OBDLink CX, UniCarScan UCSI-2100 等に対応
+         */
+        class ObdBleVehicleProvider {
+            constructor() {
+                this.device = null;
+                this.server = null;
+                this.writeChar = null;
+                this.notifyChar = null;
+                this.isConnected = false;
+                this.pollingInterval = null;
+                this.rxBuffer = '';
+                this.commandQueue = ['010D', '010C', '0105', 'ATRV']; // 車速, 回転数, 水温, 電圧
+                this.cmdIndex = 0;
+            }
+
+            async connect() {
+                if (!navigator.bluetooth) {
+                    logSystem('[OBD2 ERROR] Web Bluetooth API非対応ブラウザです。iPadでは「Bluefy」アプリをお使いください。');
+                    showCustomToast('このブラウザはWeb Bluetooth非対応です。iPadでは「Bluefy」ブラウザをご利用ください。');
+                    return;
+                }
+
+                try {
+                    logSystem('[OBD2] Requesting BLE OBD2 Adapter...');
+                    // 一般的なELM327 BLEアダプターのサービスUUID群
+                    const optionalServices = [
+                        '0000fff0-0000-1000-8000-00805f9b34fb', // Veepeak / 汎用ELM327
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10系 BLE
+                        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'  // OBDLink CX / UniCarScan系
+                    ];
+
+                    this.device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: optionalServices
+                    });
+
+                    this.device.addEventListener('gattserverdisconnected', () => {
+                        this.onDisconnected();
+                    });
+
+                    logSystem(`[OBD2] Connecting to ${this.device.name || 'OBD2 Device'}...`);
+                    this.server = await this.device.gatt.connect();
+
+                    // 利用可能なプライマリサービスを探索してNotify/Writeキャラクタリスティックを取得
+                    const services = await this.server.getPrimaryServices();
+                    for (const service of services) {
+                        const chars = await service.getCharacteristics();
+                        for (const char of chars) {
+                            if (char.properties.notify || char.properties.indicate) {
+                                this.notifyChar = char;
+                            }
+                            if (char.properties.write || char.properties.writeWithoutResponse) {
+                                this.writeChar = char;
+                            }
+                        }
+                        if (this.writeChar && this.notifyChar) break;
+                    }
+
+                    if (!this.writeChar || !this.notifyChar) {
+                        throw new Error('適合するOBD2通信キャラクタリスティックが見つかりませんでした。');
+                    }
+
+                    await this.notifyChar.startNotifications();
+                    this.notifyChar.addEventListener('characteristicvaluechanged', (e) => {
+                        this.handleNotification(e);
+                    });
+
+                    this.isConnected = true;
+                    updateStatusHeader('OBD2 CONNECTED: ' + (this.device.name || 'ELM327 BLE'), 'emerald');
+                    logSystem('[OBD2] Connected! Initializing ELM327 AT commands...');
+
+                    // ELM327初期化シーケンス
+                    await this.sendCommand('ATZ');   // リセット
+                    await this.delay(400);
+                    await this.sendCommand('ATE0');  // エコーOFF
+                    await this.delay(200);
+                    await this.sendCommand('ATSP0'); // プロトコル自動判定
+                    await this.delay(200);
+
+                    this.startPolling();
+                } catch (error) {
+                    logSystem(`[OBD2 ERROR] ${error.message}`);
+                    updateStatusHeader('OBD2 CONNECTION FAILED', 'amber');
+                }
+            }
+
+            async sendCommand(cmd) {
+                if (!this.writeChar || !this.isConnected) return;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(cmd + '\r');
+                try {
+                    if (this.writeChar.properties.writeWithoutResponse) {
+                        await this.writeChar.writeValueWithoutResponse(data);
+                    } else {
+                        await this.writeChar.writeValue(data);
+                    }
+                } catch (e) {
+                    logSystem(`[OBD2 TX ERR] ${e.message}`);
+                }
+            }
+
+            handleNotification(event) {
+                const decoder = new TextDecoder();
+                const chunk = decoder.decode(event.target.value);
+                this.rxBuffer += chunk;
+
+                // ELM327の終端プロンプト '>' が来たら1レスポンスとしてパース
+                if (this.rxBuffer.includes('>')) {
+                    const lines = this.rxBuffer.split(/[\r\n>]+/).map(s => s.trim()).filter(Boolean);
+                    this.rxBuffer = '';
+                    lines.forEach(line => this.parseObdResponse(line));
+                }
+            }
+
+            /**
+             * 標準OBD2 PID 16進数レスポンスのパース処理
+             */
+            parseObdResponse(raw) {
+                const clean = raw.replace(/\s+/g, '').toUpperCase();
+
+                // 010D: 車速 (41 0D XX -> XX km/h)
+                if (clean.startsWith('410D') && clean.length >= 6) {
+                    const speed = parseInt(clean.substring(4, 6), 16);
+                    if (!isNaN(speed)) appState.vehicle.speed = speed;
+                }
+                // 010C: エンジン回転数 (41 0C AA BB -> ((AA*256)+BB)/4 rpm)
+                else if (clean.startsWith('410C') && clean.length >= 8) {
+                    const a = parseInt(clean.substring(4, 6), 16);
+                    const b = parseInt(clean.substring(6, 8), 16);
+                    if (!isNaN(a) && !isNaN(b)) {
+                        appState.vehicle.rpm = Math.round(((a * 256) + b) / 4);
+                    }
+                }
+                // 0105: 冷却水温 (41 05 XX -> XX - 40 °C)
+                else if (clean.startsWith('4105') && clean.length >= 6) {
+                    const temp = parseInt(clean.substring(4, 6), 16) - 40;
+                    if (!isNaN(temp)) appState.vehicle.coolant = temp;
+                }
+                // ATRV: バッテリー電圧 (例: "14.1V")
+                else if (clean.endsWith('V') && !clean.startsWith('41')) {
+                    const volt = parseFloat(clean.replace('V', ''));
+                    if (!isNaN(volt)) appState.vehicle.voltage = volt.toFixed(1);
+                }
+            }
+
+            startPolling() {
+                this.stopPolling();
+                this.pollingInterval = setInterval(() => {
+                    if (!this.isConnected) return;
+                    const cmd = this.commandQueue[this.cmdIndex];
+                    this.sendCommand(cmd);
+                    this.cmdIndex = (this.cmdIndex + 1) % this.commandQueue.length;
+                }, 250); // 250msごとにPIDをローテーション送信
+            }
+
+            stopPolling() {
+                if (this.pollingInterval) {
+                    clearInterval(this.pollingInterval);
+                    this.pollingInterval = null;
+                }
+            }
+
+            onDisconnected() {
+                this.isConnected = false;
+                this.stopPolling();
+                logSystem('[OBD2] Adapter disconnected.');
+                if (appState.mode === 'OBD') {
+                    updateStatusHeader('OBD2 DISCONNECTED - TAP CONNECT', 'amber');
+                }
+            }
+
+            delay(ms) {
+                return new Promise(res => setTimeout(res, ms));
+            }
+        }
+
+        // プロバイダーインスタンス生成
+        const demoProvider = new DemoVehicleProvider();
+        const gpsProvider = new GpsVehicleProvider();
+        const obdProvider = new ObdBleVehicleProvider();
+
+        /**
+         * モード切り替え制御
+         */
+        function switchDataMode(newMode) {
+            appState.mode = newMode;
+
+            // ボタン見た目更新
+            const modes = ['DEMO', 'GPS', 'OBD'];
+            modes.forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m.toLowerCase()}`);
+                if (m === newMode) {
+                    btn.className = 'px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all bg-cockpit-cyan text-black shadow';
+                } else {
+                    btn.className = 'px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-gray-400 hover:text-white transition-all';
+                }
+            });
+
+            // プロバイダー制御
+            gpsProvider.stop();
+            const obdBtn = document.getElementById('btn-obd-connect');
+
+            if (newMode === 'DEMO') {
+                obdBtn.classList.add('hidden');
+                updateStatusHeader('DEMO SIMULATION ACTIVE (HYBRID MODE)', 'emerald');
+                logSystem('[MODE] Switched to Demo Hybrid Simulation.');
+            } else if (newMode === 'GPS') {
+                obdBtn.classList.add('hidden');
+                updateStatusHeader('GPS REALTIME SPEED MODE', 'cyan');
+                gpsProvider.start();
+            } else if (newMode === 'OBD') {
+                obdBtn.classList.remove('hidden');
+                if (obdProvider.isConnected) {
+                    updateStatusHeader('OBD2 CONNECTED: ' + (obdProvider.device?.name || 'ELM327'), 'emerald');
+                } else {
+                    updateStatusHeader('OBD2 STANDBY - CLICK CONNECT BUTTON', 'amber');
+                }
+                logSystem('[MODE] Switched to OBD2 BLE Mode.');
+            }
+        }
+
+        function connectObdAdapter() {
+            obdProvider.connect();
+        }
+
+        function updateStatusHeader(text, colorType) {
+            document.getElementById('status-label').textContent = text;
+            const dot = document.getElementById('status-dot');
+            dot.className = 'w-2 h-2 rounded-full animate-pulse ';
+            if (colorType === 'emerald') dot.classList.add('bg-cockpit-emerald');
+            else if (colorType === 'cyan') dot.classList.add('bg-cockpit-cyan');
+            else dot.classList.add('bg-cockpit-amber');
+        }
+
+        /**
+         * 最適巡航速度レンジ & 到着時間計算ロジック
+         */
+        function calculateOptimalSpeedAndEta() {
+            const limit = appState.navigation.speedLimit;
+            // 安全かつ高効率な最適巡航レンジ（制限速度の85%〜96%を目安に算出）
+            const optMin = Math.max(30, Math.round(limit * 0.86));
+            const optMax = Math.max(35, Math.round(limit * 0.96));
+
+            document.getElementById('display-speed-limit').textContent = limit;
+            document.getElementById('optimal-speed-min').textContent = optMin;
+            document.getElementById('optimal-speed-max').textContent = optMax;
+
+            // 視覚バー上の最適ゾーン位置（0〜120km/hスケール）
+            const maxScale = 120;
+            const leftPct = Math.min(90, (optMin / maxScale) * 100);
+            const widthPct = Math.max(6, ((optMax - optMin) / maxScale) * 100);
+            const zoneBar = document.getElementById('optimal-zone-bar');
+            zoneBar.style.left = `${leftPct}%`;
+            zoneBar.style.width = `${widthPct}%`;
+
+            // 現在速度マーカー位置
+            const spd = appState.vehicle.speed;
+            const markerPct = Math.min(98, Math.max(1, (spd / maxScale) * 100));
+            document.getElementById('current-speed-marker').style.left = `${markerPct}%`;
+
+            // 速度評価バッジ更新
+            const badge = document.getElementById('speed-advice-badge');
+            const adviceText = document.getElementById('speed-advice-text');
+
+            if (spd > limit) {
+                badge.textContent = 'SPEED OVER LIMIT';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-cockpit-danger border border-red-500/50';
+                adviceText.textContent = '制限速度を超過しています。減速してください';
+            } else if (spd >= optMin && spd <= optMax) {
+                badge.textContent = 'OPTIMAL ECO PACE';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-cockpit-emerald border border-emerald-500/40';
+                adviceText.textContent = '定刻到着・高燃費に最適な巡航速度です';
+            } else if (spd < optMin && spd > 0) {
+                badge.textContent = 'BELOW TARGET PACE';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-cockpit-amber border border-amber-500/40';
+                adviceText.textContent = '交通の流れに合わせ緩やかに巡航速度へ';
+            } else {
+                badge.textContent = 'VEHICLE STOPPED';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-800 text-gray-400 border border-gray-700';
+                adviceText.textContent = '停車中（アイドリングストップ / EV待機）';
+            }
+
+            // 残り距離の更新（シミュレーションまたはGPS走行時）
+            if (appState.timer.isRunning && spd > 0) {
+                // 0.5秒ごとの移動距離 (km) = spd * (0.5 / 3600)
+                const movedKm = spd * (0.5 / 3600);
+                appState.navigation.remainingDistance = Math.max(0, appState.navigation.remainingDistance - movedKm);
+            }
+
+            // 残り時間 & ETA計算（有効巡航速度は現在速度と最適速度の加重平均で安定化）
+            const effectiveSpeed = spd > 15 ? (spd * 0.4 + ((optMin + optMax) / 2) * 0.6) : ((optMin + optMax) / 2) * 0.85;
+            const remHours = appState.navigation.remainingDistance / Math.max(20, effectiveSpeed);
+            const remMinutes = Math.max(1, Math.round(remHours * 60));
+
+            const now = new Date();
+            const etaDate = new Date(now.getTime() + remMinutes * 60000);
+            const etaStr = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+            document.getElementById('val-eta').textContent = etaStr;
+            document.getElementById('val-rem-time').innerHTML = `${remMinutes}<span class="text-xs font-sans font-normal text-gray-400 ml-0.5">分</span>`;
+            document.getElementById('val-rem-dist').innerHTML = `${appState.navigation.remainingDistance.toFixed(1)}<span class="text-xs font-sans font-normal text-gray-400 ml-0.5">km</span>`;
+
+            // 進捗率
+            const progress = Math.min(100, Math.max(0, Math.round(((appState.navigation.totalDistance - appState.navigation.remainingDistance) / appState.navigation.totalDistance) * 100)));
+            document.getElementById('val-progress-pct').textContent = `${progress}%`;
+            document.getElementById('bar-route-progress').style.width = `${progress}%`;
+        }
+
+        /**
+         * UI描画メインループ (500ms間隔)
+         */
+        function renderDashboard() {
+            if (appState.mode === 'DEMO') {
+                demoProvider.update();
+            }
+
+            // 車両数値の反映
+            const spd = Math.round(appState.vehicle.speed);
+            const rpm = appState.vehicle.rpm;
+            document.getElementById('val-speed').textContent = spd;
+            document.getElementById('val-rpm').textContent = rpm.toLocaleString();
+            document.getElementById('val-coolant').textContent = appState.vehicle.coolant;
+            document.getElementById('val-voltage').textContent = appState.vehicle.voltage;
+            document.getElementById('val-hv-soc').textContent = appState.vehicle.hvSoc;
+
+            // RPMゲージバー（最大6000rpm基準）
+            const rpmPct = Math.min(100, (rpm / 6000) * 100);
+            document.getElementById('bar-rpm').style.width = `${rpmPct}%`;
+
+            // EV MODE バッジ表示切り替え（RPMが0のとき点灯）
+            const evBadge = document.getElementById('ev-mode-badge');
+            if (rpm === 0) {
+                evBadge.classList.remove('opacity-20');
+                evBadge.classList.add('opacity-100');
+            } else {
+                evBadge.classList.remove('opacity-100');
+                evBadge.classList.add('opacity-20');
+            }
+
+            // 最適速度・ETA更新
+            calculateOptimalSpeedAndEta();
+        }
+
+        /**
+         * 連続走行時間タイマー (1秒間隔)
+         */
+        function updateDriveTimer() {
+            if (!appState.timer.isRunning) return;
+            appState.timer.elapsedSeconds++;
+
+            const sec = appState.timer.elapsedSeconds;
+            const hrs = Math.floor(sec / 3600);
+            const mins = Math.floor((sec % 3600) / 60);
+            const secs = sec % 60;
+
+            const formatted = [
+                String(hrs).padStart(2, '0'),
+                String(mins).padStart(2, '0'),
+                String(secs).padStart(2, '0')
+            ].join(':');
+
+            document.getElementById('val-drive-timer').textContent = formatted;
+
+            // 2時間 (7200秒) 休憩目安ゲージ
+            const fatiguePct = Math.min(100, (sec / 7200) * 100);
+            const bar = document.getElementById('bar-fatigue');
+            bar.style.width = `${fatiguePct}%`;
+
+            if (sec >= 7200) {
+                bar.className = 'h-full bg-cockpit-danger transition-all duration-500';
+                if (!appState.timer.alertDismissed) {
+                    document.getElementById('alert-banner').classList.remove('hidden');
+                }
+            } else if (sec >= 5400) {
+                bar.className = 'h-full bg-cockpit-amber transition-all duration-500';
+            } else {
+                bar.className = 'h-full bg-cockpit-emerald transition-all duration-500';
+            }
+        }
+
+        function toggleDriveTimer() {
+            appState.timer.isRunning = !appState.timer.isRunning;
+            const icon = document.getElementById('timer-toggle-icon');
+            icon.className = appState.timer.isRunning ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        function resetDriveTimer() {
+            appState.timer.elapsedSeconds = 0;
+            appState.timer.alertDismissed = false;
+            document.getElementById('alert-banner').classList.add('hidden');
+            document.getElementById('val-drive-timer').textContent = '00:00:00';
+            document.getElementById('bar-fatigue').style.width = '0%';
+        }
+
+        function dismissAlert() {
+            appState.timer.alertDismissed = true;
+            document.getElementById('alert-banner').classList.add('hidden');
+        }
+
+        /**
+         * 運転中の誤操作防止ロック切り替え
+         */
+        function toggleDriveLock() {
+            appState.isLocked = !appState.isLocked;
+            const lockIcon = document.getElementById('lock-icon');
+            const lockText = document.getElementById('lock-text');
+            const targets = [
+                document.getElementById('btn-open-settings'),
+                document.getElementById('btn-edit-dest'),
+                document.getElementById('timer-controls')
+            ];
+
+            if (appState.isLocked) {
+                lockIcon.className = 'fa-solid fa-lock text-cockpit-amber';
+                lockText.textContent = 'ロック中';
+                targets.forEach(el => el && el.classList.add('locked-overlay'));
+            } else {
+                lockIcon.className = 'fa-solid fa-lock-open text-cockpit-cyan';
+                lockText.textContent = '操作ロック';
+                targets.forEach(el => el && el.classList.remove('locked-overlay'));
+            }
+        }
+
+        /**
+         * 設定モーダル・目的地変更・OpenWeatherMap API取得
+         */
+        function openSettingsModal() {
+            if (appState.isLocked) return;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function applyDestinationPreset(name, dist, limit, lat, lon) {
+            document.getElementById('input-dest-name').value = name;
+            document.getElementById('input-rem-dist').value = dist;
+            document.getElementById('input-speed-limit').value = limit;
+            document.getElementById('input-dest-lat').value = lat;
+            document.getElementById('input-dest-lon').value = lon;
+        }
+
+        async function saveSettings() {
+            const name = document.getElementById('input-dest-name').value.trim() || '目的地';
+            const dist = parseFloat(document.getElementById('input-rem-dist').value) || 10.0;
+            const limit = parseInt(document.getElementById('input-speed-limit').value, 10) || 60;
+            const apiKey = document.getElementById('input-owm-key').value.trim();
+            const lat = parseFloat(document.getElementById('input-dest-lat').value);
+            const lon = parseFloat(document.getElementById('input-dest-lon').value);
+
+            appState.navigation.destName = name;
+            appState.navigation.remainingDistance = dist;
+            appState.navigation.totalDistance = Math.max(dist, dist * 1.15);
+            appState.navigation.speedLimit = limit;
+            appState.navigation.lat = lat;
+            appState.navigation.lon = lon;
+            appState.weather.apiKey = apiKey;
+
+            document.getElementById('dest-name').textContent = name;
+            closeSettingsModal();
+            calculateOptimalSpeedAndEta();
+
+            // OpenWeatherMap APIキーが指定されている場合は実データ取得
+            if (apiKey && !isNaN(lat) && !isNaN(lon)) {
+                await fetchDestinationWeather(apiKey, lat, lon);
+            }
+        }
+
+        async function fetchDestinationWeather(apiKey, lat, lon) {
+            try {
+                logSystem(`[WEATHER] Fetching OpenWeatherMap forecast for (${lat}, ${lon})...`);
+                const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ja&cnt=3`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                // 直近3時間後の予報を取得
+                const forecast = data.list[0];
+                const temp = Math.round(forecast.main.temp);
+                const desc = forecast.weather[0].description;
+                const pop = Math.round((forecast.pop || 0) * 100);
+                const mainWeather = forecast.weather[0].main;
+
+                document.getElementById('weather-temp').textContent = `${temp}°C`;
+                document.getElementById('weather-desc').textContent = desc;
+                document.getElementById('weather-pop').textContent = `${pop}%`;
+                document.getElementById('weather-source-badge').textContent = 'LIVE API';
+                document.getElementById('weather-source-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-cockpit-emerald border border-emerald-800';
+
+                const iconEl = document.getElementById('weather-icon');
+                const noteEl = document.getElementById('weather-arrival-note');
+                if (mainWeather.includes('Rain') || mainWeather.includes('Drizzle')) {
+                    iconEl.className = 'fa-solid fa-cloud-rain text-cockpit-cyan';
+                    noteEl.textContent = '到着時は雨の予報・車間距離に注意';
+                } else if (mainWeather.includes('Cloud')) {
+                    iconEl.className = 'fa-solid fa-cloud text-gray-300';
+                    noteEl.textContent = '曇り予報・視界良好';
+                } else {
+                    iconEl.className = 'fa-solid fa-sun text-cockpit-amber';
+                    noteEl.textContent = '天候安定・路面状況良好';
+                }
+                logSystem(`[WEATHER] Updated: ${temp}°C, ${desc}, POP ${pop}%`);
+            } catch (err) {
+                logSystem(`[WEATHER ERROR] ${err.message}`);
+            }
+        }
+
+        /**
+         * カスタムトースト通知（alert代替）
+         */
+        function showCustomToast(message) {
+            const banner = document.getElementById('alert-banner');
+            document.getElementById('alert-message').textContent = message;
+            banner.classList.remove('hidden');
+        }
+
+        // 初期化とループ起動
+        window.onload = function () {
+            renderDashboard();
+            setInterval(renderDashboard, 500);
+            setInterval(updateDriveTimer, 1000);
+        };
+    </script>
+</body>
+</html>
