@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.0 Stable</title>
+    <title>DriveAssist OS - PRO v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,10 +54,10 @@
                 <i class="fa-solid fa-gauge-high text-lg"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.0 STABLE</span></h1>
+                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.0</span></h1>
                 <p class="text-[11px] text-cockpit-emerald flex items-center gap-1.5 font-mono">
                     <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                    OBD2 + HIGHWAY IC LIST ACTIVE
+                    OBD2 + PROGRESS BAR + APPLE/GOOGLE MAPS ACTIVE
                 </p>
             </div>
         </div>
@@ -71,10 +71,15 @@
             </button>
         </div>
 
-        <!-- コントロールボタン -->
+        <!-- 外部マップ連携ボタン群 -->
         <div class="flex items-center gap-2">
-            <button onclick="openGoogleMapsExternal()" class="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5">
-                <i class="fa-solid fa-diamond-turn-right"></i><span>Googleマップ連携</span>
+            <!-- Appleマップ連携 -->
+            <button onclick="openAppleMaps()" class="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内">
+                <i class="fa-solid fa-map-location-dot"></i><span class="hidden md:inline">Appleマップ</span>
+            </button>
+            <!-- Googleマップ連携 -->
+            <button onclick="openGoogleMapsExternal()" class="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内">
+                <i class="fa-solid fa-diamond-turn-right"></i><span class="hidden md:inline">Googleマップ</span>
             </button>
         </div>
     </header>
@@ -87,7 +92,7 @@
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold px-2 py-0.5 rounded bg-cockpit-danger text-white">交通障害検知</span>
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded bg-red-600 text-white">交通障害検知</span>
                     <span id="alert-countdown" class="text-xs font-mono text-red-300">あと 12秒 で自動消去</span>
                 </div>
                 <p class="font-bold text-sm text-white mt-0.5">前方ルート上：落下物・速度規制情報あり。安全に注意してください。</p>
@@ -167,7 +172,7 @@
             </div>
         </section>
 
-        <!-- 【右カラム：目的地・ハイウェイICリスト (7カラム)】 -->
+        <!-- 【右カラム：目的地 ＆ ルート進行状況プログレスバー ＆ ハイウェイICリスト (7カラム)】 -->
         <section class="lg:col-span-7 flex flex-col gap-3">
 
             <!-- 目的地バー -->
@@ -188,13 +193,34 @@
                 </div>
             </div>
 
+            <!-- ルート進行状況インジケーター（プログレスバー） -->
+            <div class="bg-cockpit-card border border-cockpit-border rounded-2xl p-3.5 shadow-xl">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="text-gray-300 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-route text-cockpit-cyan"></i> 現在地から目的地までのルート進行状況
+                    </span>
+                    <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">25% 完了</span>
+                </div>
+                
+                <!-- プログレスバー本体 -->
+                <div class="relative w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500 shadow-[0_0_10px_#00E676]" style="width: 25%;"></div>
+                </div>
+
+                <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
+                    <span>出発: 現在地（岡崎）</span>
+                    <span id="progress-rem-text" class="text-white font-bold">残り 58.4 km</span>
+                    <span id="progress-dest-label">到着: 新東名 浜松SA</span>
+                </div>
+            </div>
+
             <!-- ハイウェイIC・SA/PA 順番リスト -->
-            <div class="flex-1 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between min-h-[320px]">
+            <div class="flex-1 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between min-h-[240px]">
                 <div class="flex items-center justify-between border-b border-cockpit-border pb-2 mb-3">
                     <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
                         <i class="fa-solid fa-road"></i> ハイウェイIC順次案内
                     </span>
-                    <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">リアルタイム同期</span>
+                    <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">リアルタイム連動</span>
                 </div>
 
                 <div class="flex-1 flex flex-col justify-around space-y-2 relative py-1">
@@ -218,15 +244,6 @@
                         <span class="font-mono text-base font-bold text-white">41.2 km</span>
                     </div>
 
-                    <div class="relative flex items-center justify-between bg-black/50 border border-cockpit-border rounded-2xl p-3 pl-9">
-                        <span class="absolute left-3 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <div>
-                            <span class="text-[10px] text-amber-400 block">SA / 休憩</span>
-                            <span class="text-sm font-bold text-gray-200">美合 PA</span>
-                        </div>
-                        <span class="font-mono text-base font-bold text-white">14.8 km</span>
-                    </div>
-
                     <div class="relative flex items-center justify-between bg-emerald-950/50 border border-emerald-500/60 rounded-2xl p-3.5 pl-9 shadow">
                         <span class="absolute left-2.5 w-3.5 h-3.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
                         <div>
@@ -243,6 +260,7 @@
     <script>
         let timerSec = 0;
         let alertTimer = null;
+        const totalRouteDist = 78.0; // 仮の全体総距離 (km)
 
         window.onload = function() {
             startAlertCountdown();
@@ -279,12 +297,20 @@
             if (!val) return;
             document.getElementById('dest-title').textContent = val;
             document.getElementById('list-dest-name').textContent = val;
-            alert(`目的地を「${val}」に更新しました！`);
+            document.getElementById('progress-dest-label').textContent = `到着: ${val}`;
+            alert(`目的地を「${val}」に更新し、ルート進捗とハイウェイ案内を同期しました！`);
         }
 
+        // Googleマップ連携
         function openGoogleMapsExternal() {
             const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+        }
+
+        // Appleマップ連携
+        function openAppleMaps() {
+            const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
+            window.open(`http://maps.apple.com/?daddr=${dest}&dirflg=d`, '_blank');
         }
 
         function resetTimer() {
