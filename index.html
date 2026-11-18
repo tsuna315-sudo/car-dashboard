@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.5</title>
+    <title>DriveAssist OS - PRO v3.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,10 +60,10 @@
                 <i class="fa-solid fa-gauge-high text-xl"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.5</span></h1>
-                <p id="system-status-label" class="text-xs text-cockpit-amber flex items-center gap-1.5 font-mono mt-0.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-cockpit-amber animate-pulse"></span>
-                    OBD2未接続 (GPS測位中 / 接続で自動切替)
+                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.6</span></h1>
+                <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono mt-0.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                    GPS + 道路ルーティング連動
                 </p>
             </div>
         </div>
@@ -77,23 +77,12 @@
             </button>
         </div>
 
-        <!-- 天気（大きく常時表示） ＆ マップ連携ボタン -->
+        <!-- マップ連携ボタン -->
         <div class="flex items-center gap-2.5">
-            <!-- 天気表示（視認性向上） -->
-            <div class="flex items-center gap-2 bg-black/80 border border-cockpit-border rounded-xl px-3.5 py-2">
-                <i id="weather-icon" class="fa-solid fa-sun text-cockpit-amber text-lg"></i>
-                <div class="font-mono">
-                    <span id="weather-temp" class="text-sm font-extrabold text-white">--°C</span>
-                    <span id="weather-desc" class="text-xs text-gray-300 ml-1">晴</span>
-                </div>
-            </div>
-
-            <!-- Appleマップ直接起動 -->
-            <button onclick="openAppleMaps()" class="px-3.5 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内を開く">
+            <button onclick="openAppleMaps()" class="px-3.5 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内">
                 <i class="fa-solid fa-map-location-dot text-sm"></i><span>Appleマップ</span>
             </button>
-            <!-- Googleマップ直接起動 -->
-            <button onclick="openGoogleMapsExternal()" class="px-3.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内を開く">
+            <button onclick="openGoogleMapsExternal()" class="px-3.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内">
                 <i class="fa-solid fa-diamond-turn-right text-sm"></i><span>Googleマップ</span>
             </button>
         </div>
@@ -102,10 +91,10 @@
     <!-- ==================== メイン2カラムコックピット ==================== -->
     <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 my-1">
 
-        <!-- 【左カラム：速度計 ＆ OBD2テレメトリ (5カラム)】 -->
+        <!-- 【左カラム：速度計 ＆ 進行状況インジケーター ＆ OBD2テレメトリ (5カラム)】 -->
         <section class="lg:col-span-5 flex flex-col justify-between bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl gap-3">
             
-            <!-- 速度計 -->
+            <!-- 1. 速度計 -->
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3.5">
                 <div class="flex items-center justify-between mb-1">
                     <span id="speed-mode-badge" class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-cockpit-amber border border-amber-400/40">
@@ -129,40 +118,76 @@
                 </div>
             </div>
 
-            <!-- OBD2詳細テレメトリ -->
-            <div class="grid grid-cols-2 gap-2.5">
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">冷却水温</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-coolant">--</span><span class="text-xs text-gray-400">°C</span></div>
+            <!-- 2. 【ご要望】スピードメーターの下に配置した「ルート進行状況インジケーター」 -->
+            <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="text-gray-300 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-route text-cockpit-cyan"></i> 目的地までのルート進行状況
+                    </span>
+                    <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">0% 完了</span>
                 </div>
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">補機電圧</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-voltage">--</span><span class="text-xs text-gray-400">V</span></div>
+                
+                <div class="relative w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500 shadow-[0_0_10px_#00E676]" style="width: 0%;"></div>
                 </div>
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">HV電池残量</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-cockpit-emerald tabular-nums"><span id="val-hv-soc">--</span><span class="text-xs text-gray-400">%</span></div>
-                </div>
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">スロットル</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-throttle">--</span><span class="text-xs text-gray-400">%</span></div>
-                </div>
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">吸気温度</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-intake">--</span><span class="text-xs text-gray-400">°C</span></div>
-                </div>
-                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
-                    <div><span class="text-xs font-bold text-gray-400 block">エンジン負荷</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-load">--</span><span class="text-xs text-gray-400">%</span></div>
+
+                <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
+                    <span>現在地</span>
+                    <span id="progress-rem-text" class="text-white font-bold">残り -- km</span>
+                    <span id="progress-dest-label">目的地</span>
                 </div>
             </div>
 
-            <!-- タイマー -->
-            <div class="bg-black/50 border border-cockpit-border rounded-2xl px-4 py-2.5 flex items-center justify-between">
+            <!-- 3. OBD2詳細テレメトリ -->
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">冷却水温</span></div>
+                    <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-coolant">--</span><span class="text-[10px] text-gray-400">°C</span></div>
+                </div>
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">補機電圧</span></div>
+                    <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-voltage">--</span><span class="text-[10px] text-gray-400">V</span></div>
+                </div>
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">HV電池残量</span></div>
+                    <div class="font-mono text-xl font-extrabold text-cockpit-emerald tabular-nums"><span id="val-hv-soc">--</span><span class="text-[10px] text-gray-400">%</span></div>
+                </div>
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">スロットル</span></div>
+                    <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-throttle">--</span><span class="text-[10px] text-gray-400">%</span></div>
+                </div>
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">吸気温度</span></div>
+                    <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-intake">--</span><span class="text-[10px] text-gray-400">°C</span></div>
+                </div>
+                <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
+                    <div><span class="text-[11px] font-bold text-gray-400 block">エンジン負荷</span></div>
+                    <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-load">--</span><span class="text-[10px] text-gray-400">%</span></div>
+                </div>
+            </div>
+
+            <!-- 4. 【ご要望】運転時間（連続走行タイマー）の上に大きく配置した「目的地天気」 -->
+            <div class="bg-black/80 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-cockpit-amber">
+                        <i id="weather-icon" class="fa-solid fa-sun text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">目的地天気</span>
+                        <span id="dest-weather-label" class="text-sm sm:text-base font-extrabold text-white">取得中...</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="dest-weather-temp" class="font-mono text-xl font-extrabold text-cockpit-amber">--°C</span>
+                </div>
+            </div>
+
+            <!-- 5. 連続走行タイマー -->
+            <div class="bg-black/50 border border-cockpit-border rounded-2xl px-4 py-2 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-stopwatch text-cockpit-amber"></i>
                     <span class="text-xs font-bold text-gray-400">連続走行:</span>
-                    <span id="val-drive-timer" class="font-mono text-lg font-extrabold text-white tabular-nums">00:00:00</span>
+                    <span id="val-drive-timer" class="font-mono text-base font-extrabold text-white tabular-nums">00:00:00</span>
                 </div>
                 <button onclick="resetTimer()" class="text-xs text-gray-400 hover:text-white underline">リセット</button>
             </div>
@@ -245,11 +270,12 @@
     <script>
         let timerSec = 0;
         let map, carMarker, destMarker, routePolyline;
-        let destLatLng = { lat: 34.755, lon: 135.982 }; // 大和高原カントリークラブ
+        let destLatLng = { lat: 34.755, lon: 135.982 }; // 初期：大和高原カントリークラブ
         let currentLatLng = null;
+        let totalRouteKm = 0;
 
         window.onload = function() {
-            // 地図初期化（一宮・名古屋周辺中心）
+            // 地図初期化
             try {
                 map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 10);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
@@ -278,15 +304,15 @@
                         currentLatLng = { lat, lon };
                         
                         if (carMarker) carMarker.setLatLng([lat, lon]);
-                        document.getElementById('system-status-label').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-cockpit-emerald animate-pulse"></span> GPS測位中 (OBD2接続待ち)';
+                        document.getElementById('system-status-label').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-cockpit-emerald animate-pulse"></span> GPS測位中';
                         
-                        fetchWeather(lat, lon);
+                        fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
                         fetchRoadRoute(lat, lon, destLatLng.lat, destLatLng.lon);
                     },
                     (error) => {
                         console.log('GPS error:', error);
-                        currentLatLng = { lat: 35.301, lon: 136.806 }; // フォールバック（一宮周辺）
-                        fetchWeather(35.301, 136.806);
+                        currentLatLng = { lat: 35.301, lon: 136.806 }; // フォールバック
+                        fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
                         fetchRoadRoute(35.301, 136.806, destLatLng.lat, destLatLng.lon);
                     },
                     { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
@@ -303,7 +329,7 @@
             }, 1000);
         };
 
-        // OSRM無料APIを使用して「道路に沿ったルート線」を取得して描画
+        // OSRM無料APIを使用して道路に沿ったルート線を取得
         async function fetchRoadRoute(lat1, lon1, lat2, lon2) {
             try {
                 const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
@@ -312,20 +338,24 @@
 
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
-                    const distanceKm = (route.distance / 1000).toFixed(1);
+                    totalRouteKm = (route.distance / 1000);
+                    const distanceKm = totalRouteKm.toFixed(1);
                     const durationMin = Math.round(route.duration / 60);
 
                     // 画面数値更新
                     document.getElementById('val-dist-num').textContent = distanceKm;
                     document.getElementById('list-dest-dist').textContent = distanceKm + ' km';
-                    document.getElementById('ic-next-dist').textContent = (distanceKm * 0.15).toFixed(1) + ' km';
-                    document.getElementById('ic-jct-dist').textContent = (distanceKm * 0.5).toFixed(1) + ' km';
+                    document.getElementById('ic-next-dist').textContent = (totalRouteKm * 0.15).toFixed(1) + ' km';
+                    document.getElementById('ic-jct-dist').textContent = (totalRouteKm * 0.5).toFixed(1) + ' km';
 
                     const etaDate = new Date(Date.now() + durationMin * 60000);
                     document.getElementById('val-eta').textContent = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
+                    // 進行状況バーの初期更新
+                    updateProgressBar(distanceKm, totalRouteKm);
+
                     // 道路に沿った座標配列をLeafletのPolylineとして描画
-                    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]); // [lon, lat] -> [lat, lon]
+                    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
 
                     if (map) {
                         if (routePolyline) map.removeLayer(routePolyline);
@@ -338,19 +368,41 @@
             }
         }
 
-        // 天気取得（Open-Meteo）
-        async function fetchWeather(lat, lon) {
+        // 進行状況バー（スピードメーター下）の計算・更新
+        function updateProgressBar(remKm, totalKm) {
+            if (!totalKm || totalKm <= 0) return;
+            const travKm = Math.max(0, totalKm - parseFloat(remKm));
+            const pct = Math.min(100, Math.max(0, Math.round((travKm / totalKm) * 100)));
+
+            document.getElementById('progress-percent').textContent = pct + '% 完了';
+            document.getElementById('route-progress-bar').style.width = pct + '%';
+            document.getElementById('progress-rem-text').textContent = `残り ${remKm} km`;
+            document.getElementById('progress-dest-label').textContent = document.getElementById('dest-title').textContent;
+        }
+
+        // 目的地周辺の天気取得（Open-Meteo）
+        async function fetchDestinationWeather(lat, lon) {
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
                 const data = await res.json();
                 if (data && data.current) {
                     const temp = Math.round(data.current.temperature_2m);
-                    document.getElementById('weather-temp').textContent = `${temp}°C`;
-                    document.getElementById('weather-desc').textContent = temp > 15 ? '晴れ' : '良好';
+                    const code = data.current.weather_code;
+                    let desc = '晴れ';
+                    let iconClass = 'fa-sun text-cockpit-amber';
+
+                    if (code >= 1 && code <= 3) { desc = '曇り時々晴'; iconclass = 'fa-cloud-sun text-gray-300'; }
+                    else if (code >= 45 && code <= 48) { desc = '霧'; iconClass = 'fa-smog text-gray-400'; }
+                    else if (code >= 51 && code <= 67) { desc = '雨'; iconClass = 'fa-cloud-rain text-blue-400'; }
+                    else if (code >= 71 && code <= 77) { desc = '雪'; iconClass = 'fa-snowflake text-blue-200'; }
+
+                    document.getElementById('dest-weather-label').textContent = `${desc} (目的地周辺)`;
+                    document.getElementById('dest-weather-temp').textContent = `${temp}°C`;
+                    document.getElementById('weather-icon').className = `fa-solid ${iconClass} text-lg`;
                 }
             } catch (e) {
-                document.getElementById('weather-temp').textContent = '17°C';
-                document.getElementById('weather-desc').textContent = '晴';
+                document.getElementById('dest-weather-label').textContent = '良好 (目的地周辺)';
+                document.getElementById('dest-weather-temp').textContent = '17°C';
             }
         }
 
@@ -370,6 +422,7 @@
                     if (destMarker && map) {
                         destMarker.setLatLng([destLatLng.lat, destLatLng.lon]);
                     }
+                    fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
                     if (currentLatLng) {
                         fetchRoadRoute(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
                     }
