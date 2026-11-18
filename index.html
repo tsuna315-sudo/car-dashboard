@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v4.1 一体型</title>
+    <title>DriveAssist OS - PRO v4.3 一体型</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,25 +71,29 @@
                     <i class="fa-solid fa-shield-halved text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v4.1</span></h1>
+                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v4.3</span></h1>
                     <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono">
                         <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                        道路ルーティング最適化済み
+                        音声1回発話 ＆ 検索クリア機能搭載
                     </p>
                 </div>
             </div>
 
-            <!-- 目的地入力 -->
+            <!-- 目的地入力（リセットボタン付き） -->
             <div class="flex-1 max-w-sm flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-1.5">
                 <i class="fa-solid fa-location-crosshairs text-gray-400 text-xs"></i>
-                <input id="quick-search-input" type="text" value="大和高原カントリークラブ" placeholder="施設名・スポット名を入力" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
+                <input id="quick-search-input" type="text" value="大和高原カントリークラブ" placeholder="住所・施設名を入力" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
+                <!-- 検索欄リセットボタン -->
+                <button onclick="clearSearchInput()" class="text-gray-400 hover:text-white px-1.5 text-xs" title="入力をクリア">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
                 <button onclick="searchDestination()" class="px-3 py-1 rounded-lg bg-cockpit-cyan text-black font-extrabold text-xs shrink-0 hover:bg-cyan-300 transition">
                     セット
                 </button>
             </div>
 
-            <!-- 音声読み上げボタン -->
-            <button onclick="speakCurrentTraffic()" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-200 font-bold text-xs flex items-center gap-1.5" title="現在の状況を音声案内">
+            <!-- 音声読み上げボタン（1回のみ発話） -->
+            <button onclick="speakCurrentTraffic()" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-200 font-bold text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-volume-high"></i><span>道路音声案内</span>
             </button>
         </div>
@@ -141,11 +145,11 @@
                     <span class="text-gray-300 font-bold flex items-center gap-1.5">
                         <i class="fa-solid fa-route text-cockpit-cyan"></i> 目的地までの進行状況
                     </span>
-                    <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">0% 完了</span>
+                    <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">案内中</span>
                 </div>
                 
                 <div class="relative w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
-                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500" style="width: 0%;"></div>
+                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500" style="width: 25%;"></div>
                 </div>
 
                 <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
@@ -239,7 +243,7 @@
                     <div id="cockpit-map" class="w-full h-full min-h-[220px] z-10"></div>
                 </div>
 
-                <!-- 道路規制・周辺モニター（文字サイズを大きく視認性アップ） (6カラム) -->
+                <!-- 道路規制・周辺モニター (6カラム) -->
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-cockpit-border pb-2.5 mb-2">
                         <span class="text-sm font-extrabold text-emerald-400 flex items-center gap-2">
@@ -279,7 +283,7 @@
         window.onload = function() {
             // マップ初期化
             try {
-                map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 10);
+                map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 12);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
                 const carIcon = L.divIcon({
@@ -297,7 +301,7 @@
                 console.log('Map init error:', e);
             }
 
-            // GPS取得 ＆ OSRM道路ルーティング取得（飛行機モード解消）
+            // GPS取得 ＆ ルート自動取得
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(
                     (position) => {
@@ -305,16 +309,17 @@
                         const lon = position.coords.longitude;
                         currentLatLng = { lat, lon };
                         if (carMarker) carMarker.setLatLng([lat, lon]);
-                        fetchRoadRoute(lat, lon, destLatLng.lat, destLatLng.lon);
-                        fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
+                        triggerRouteUpdate();
                     },
                     (error) => {
                         currentLatLng = { lat: 35.301, lon: 136.806 };
-                        fetchRoadRoute(35.301, 136.806, destLatLng.lat, destLatLng.lon);
-                        fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
+                        triggerRouteUpdate();
                     },
                     { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
                 );
+            } else {
+                currentLatLng = { lat: 35.301, lon: 136.806 };
+                triggerRouteUpdate();
             }
 
             // 走行タイマー
@@ -327,7 +332,14 @@
             }, 1000);
         };
 
-        // OSRM APIで道路に沿ったルート線を取得（車が空を飛ばないように道路沿いに描画）
+        function triggerRouteUpdate() {
+            if (currentLatLng && destLatLng) {
+                fetchRoadRoute(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
+                fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
+            }
+        }
+
+        // OSRM APIで道路に沿ったルート線を取得
         async function fetchRoadRoute(lat1, lon1, lat2, lon2) {
             try {
                 const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
@@ -341,19 +353,13 @@
                     const durationMin = Math.round(route.duration / 60);
 
                     document.getElementById('val-dist-num').textContent = distanceKm;
-
-                    // 進行度バー計算
-                    const assumedTotal = Math.max(10, totalRouteKm);
-                    const trav = Math.max(0, assumedTotal - totalRouteKm); // 簡易算出
-                    const pct = Math.min(100, Math.max(0, Math.round((trav / assumedTotal) * 100)));
-                    document.getElementById('progress-percent').textContent = pct + '% 完了';
-                    document.getElementById('route-progress-bar').style.width = pct + '%';
+                    document.getElementById('progress-percent').textContent = '案内中';
+                    document.getElementById('route-progress-bar').style.width = '25%';
                     document.getElementById('progress-rem-text').textContent = `残り ${distanceKm} km`;
 
                     const etaDate = new Date(Date.now() + durationMin * 60000);
                     document.getElementById('val-eta').textContent = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
-                    // 道路に沿った座標配列を描画
                     const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
 
                     if (map) {
@@ -361,10 +367,37 @@
                         routePolyline = L.polyline(coords, { color: '#00E5FF', weight: 5, opacity: 0.9 }).addTo(map);
                         map.fitBounds(routePolyline.getBounds(), { padding: [35, 35] });
                     }
+                } else {
+                    fallbackDirectRoute(lat1, lon1, lat2, lon2);
                 }
             } catch (e) {
-                console.log('Routing error handled.');
+                fallbackDirectRoute(lat1, lon1, lat2, lon2);
             }
+        }
+
+        function fallbackDirectRoute(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const dist = (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
+
+            document.getElementById('val-dist-num').textContent = dist;
+            document.getElementById('progress-rem-text').textContent = `残り ${dist} km`;
+            document.getElementById('val-eta').textContent = 'まもなく';
+
+            if (map) {
+                if (routePolyline) map.removeLayer(routePolyline);
+                routePolyline = L.polyline([[lat1, lon1], [lat2, lon2]], { color: '#00E5FF', weight: 4, opacity: 0.8 }).addTo(map);
+                map.fitBounds(routePolyline.getBounds(), { padding: [35, 35] });
+            }
+        }
+
+        // 検索欄をクリアするボタンの処理
+        function clearSearchInput() {
+            const input = document.getElementById('quick-search-input');
+            input.value = '';
+            input.focus();
         }
 
         // 目的地検索
@@ -383,10 +416,7 @@
                     if (destMarker && map) {
                         destMarker.setLatLng([destLatLng.lat, destLatLng.lon]);
                     }
-                    if (currentLatLng) {
-                        fetchRoadRoute(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
-                    }
-                    fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
+                    triggerRouteUpdate();
                 }
             } catch (e) {
                 console.log('Search error.');
@@ -409,13 +439,20 @@
             }
         }
 
-        // 音声読み上げ
+        // 音声読み上げ（重複・無限ループを防ぐため、常に既存の発話をキャンセルして1回だけ喋る）
         function speakCurrentTraffic() {
             if (!('speechSynthesis' in window)) return;
+            
+            // 溜まっている発話があればキャンセルしてリセット
+            window.speechSynthesis.cancel();
+
             const destName = document.getElementById('dest-title').textContent;
             const message = `道路音声案内です。現在の目的地は、${destName}です。ルート上の道路状況は順調です。安全運転でお進みください。`;
+            
             const uttr = new SpeechSynthesisUtterance(message);
             uttr.lang = 'ja-JP';
+            uttr.rate = 1.0;
+            
             window.speechSynthesis.speak(uttr);
         }
 
