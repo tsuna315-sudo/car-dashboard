@@ -247,6 +247,7 @@
         let obdCharacteristic = null;
         let obdReadCharacteristic = null;
         let rxBuffer = "";
+        let lastSpeedUpdateTime = Date.now();
 
         window.onload = function() {
             // 1. ルート計算用GPS位置情報（車速には使わない）
@@ -270,10 +271,17 @@
                 document.getElementById('val-drive-timer').textContent = `${h}:${m}:${s}`;
             }, 1000);
 
-            // 3. 自動OBD接続トライ
+            // 3. 未接続時やエンジン停止時に速度が残らないよう監視するウォッチドッグ (1.5秒以上データが来なければ0にリセット)
+            setInterval(() => {
+                if (!isConnectedOBD || (Date.now() - lastSpeedUpdateTime > 1500)) {
+                    document.getElementById('val-speed').textContent = '0';
+                }
+            }, 500);
+
+            // 4. 自動OBD接続トライ
             tryAutoConnectOBD();
 
-            // 4. 天気・道路情報の常時定期更新 (60秒毎)
+            // 5. 天気・道路情報の常時定期更新 (60秒毎)
             setInterval(() => {
                 if (destLatLng) {
                     fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
@@ -408,6 +416,7 @@
                 const A = parseInt(parts[2], 16);
                 if (!isNaN(A)) {
                     document.getElementById('val-speed').textContent = A;
+                    lastSpeedUpdateTime = Date.now();
                 }
             }
             // エンジン回転数 (PID: 01 0C -> 応答: 41 0C A B)
