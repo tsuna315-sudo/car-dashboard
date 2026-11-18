@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.0</title>
+    <title>DriveAssist OS - PRO v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,15 +54,15 @@
                 <i class="fa-solid fa-gauge-high text-lg"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.0</span></h1>
-                <p class="text-[11px] text-cockpit-emerald flex items-center gap-1.5 font-mono">
-                    <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                    OBD2 + PROGRESS BAR + APPLE/GOOGLE MAPS ACTIVE
+                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.1</span></h1>
+                <p class="text-[11px] text-cockpit-amber flex items-center gap-1.5 font-mono">
+                    <span id="connection-dot" class="w-2 h-2 rounded-full bg-cockpit-amber animate-pulse"></span>
+                    <span id="connection-status-text">OBD2 未接続 (待機中)</span>
                 </p>
             </div>
         </div>
 
-        <!-- 目的地検索バー -->
+        <!-- 目的地の自由検索バー -->
         <div class="flex-1 max-w-md flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-1.5">
             <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs"></i>
             <input id="quick-search-input" type="text" value="新東名 浜松SA" placeholder="目的地を入力 (例: 名古屋駅, 浜松SA)" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
@@ -73,11 +73,9 @@
 
         <!-- 外部マップ連携ボタン群 -->
         <div class="flex items-center gap-2">
-            <!-- Appleマップ連携 -->
             <button onclick="openAppleMaps()" class="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内">
                 <i class="fa-solid fa-map-location-dot"></i><span class="hidden md:inline">Appleマップ</span>
             </button>
-            <!-- Googleマップ連携 -->
             <button onclick="openGoogleMapsExternal()" class="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内">
                 <i class="fa-solid fa-diamond-turn-right"></i><span class="hidden md:inline">Googleマップ</span>
             </button>
@@ -113,7 +111,7 @@
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3.5">
                 <div class="flex items-center justify-between mb-1">
                     <span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-cyan-500/20 text-cockpit-cyan border border-cyan-400/40">
-                        <i class="fa-solid fa-leaf mr-1"></i>EV / HYBRID
+                        <i class="fa-solid fa-leaf mr-1"></i>ECO DRIVE
                     </span>
                     <span class="text-xs font-bold text-emerald-400">最適巡航: 72〜80 km/h</span>
                 </div>
@@ -133,31 +131,31 @@
                 </div>
             </div>
 
-            <!-- 6つのOBD2詳細テレメトリ -->
+            <!-- 6つのOBD2詳細テレメトリ (未接続時は "--" 表示) -->
             <div class="grid grid-cols-2 gap-2.5">
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">冷却水温</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-coolant">86</span><span class="text-xs text-gray-400">°C</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-coolant">--</span><span class="text-xs text-gray-400">°C</span></div>
                 </div>
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">補機電圧</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-voltage">14.2</span><span class="text-xs text-gray-400">V</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-voltage">--</span><span class="text-xs text-gray-400">V</span></div>
                 </div>
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">HV電池残量</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-cockpit-emerald tabular-nums"><span id="val-hv-soc">72</span><span class="text-xs text-gray-400">%</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-cockpit-emerald tabular-nums"><span id="val-hv-soc">--</span><span class="text-xs text-gray-400">%</span></div>
                 </div>
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">スロットル</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-throttle">15</span><span class="text-xs text-gray-400">%</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-throttle">--</span><span class="text-xs text-gray-400">%</span></div>
                 </div>
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">吸気温度</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-intake">24</span><span class="text-xs text-gray-400">°C</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-intake">--</span><span class="text-xs text-gray-400">°C</span></div>
                 </div>
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">エンジン負荷</span></div>
-                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-load">31</span><span class="text-xs text-gray-400">%</span></div>
+                    <div class="font-mono text-2xl font-extrabold text-white tabular-nums"><span id="val-load">--</span><span class="text-xs text-gray-400">%</span></div>
                 </div>
             </div>
 
@@ -202,13 +200,12 @@
                     <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">25% 完了</span>
                 </div>
                 
-                <!-- プログレスバー本体 -->
                 <div class="relative w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
                     <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500 shadow-[0_0_10px_#00E676]" style="width: 25%;"></div>
                 </div>
 
                 <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
-                    <span>出発: 現在地（岡崎）</span>
+                    <span>出発: 現在地</span>
                     <span id="progress-rem-text" class="text-white font-bold">残り 58.4 km</span>
                     <span id="progress-dest-label">到着: 新東名 浜松SA</span>
                 </div>
@@ -220,7 +217,7 @@
                     <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
                         <i class="fa-solid fa-road"></i> ハイウェイIC順次案内
                     </span>
-                    <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">リアルタイム連動</span>
+                    <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">連動中</span>
                 </div>
 
                 <div class="flex-1 flex flex-col justify-around space-y-2 relative py-1">
@@ -260,10 +257,10 @@
     <script>
         let timerSec = 0;
         let alertTimer = null;
-        const totalRouteDist = 78.0; // 仮の全体総距離 (km)
 
         window.onload = function() {
             startAlertCountdown();
+            // タイマー稼働
             setInterval(() => {
                 timerSec++;
                 const h = String(Math.floor(timerSec / 3600)).padStart(2, '0');
@@ -298,16 +295,13 @@
             document.getElementById('dest-title').textContent = val;
             document.getElementById('list-dest-name').textContent = val;
             document.getElementById('progress-dest-label').textContent = `到着: ${val}`;
-            alert(`目的地を「${val}」に更新し、ルート進捗とハイウェイ案内を同期しました！`);
         }
 
-        // Googleマップ連携
         function openGoogleMapsExternal() {
             const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
         }
 
-        // Appleマップ連携
         function openAppleMaps() {
             const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
             window.open(`http://maps.apple.com/?daddr=${dest}&dirflg=d`, '_blank');
