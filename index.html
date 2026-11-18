@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v5.0 ハイブリッド速度計</title>
+    <title>DriveAssist OS - ver2 原点復帰 安定版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,10 +71,10 @@
                     <i class="fa-solid fa-shield-halved text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v5.0</span></h1>
+                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">ver2 原点復帰版</span></h1>
                     <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono">
-                        <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse" id="status-dot"></span>
-                        <span id="status-text">OBD2 & GPS ハイブリッド測位稼働中</span>
+                        <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                        GPS直読スピードメーター稼働中
                     </p>
                 </div>
             </div>
@@ -82,7 +82,7 @@
             <!-- 目的地入力 -->
             <div class="flex-1 max-w-sm flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-1.5">
                 <i class="fa-solid fa-location-crosshairs text-gray-400 text-xs"></i>
-                <input id="quick-search-input" type="text" value="大和高原カントリークラブ" placeholder="住所・施設名を入力" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
+                <input id="quick-search-input" type="text" value="布袋駅" placeholder="施設名・住所を入力" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
                 <button onclick="clearSearchInput()" class="text-gray-400 hover:text-white px-1.5 text-xs" title="クリア">
                     <i class="fa-solid fa-circle-xmark"></i>
                 </button>
@@ -91,23 +91,18 @@
                 </button>
             </div>
 
-            <!-- 操作ボタン -->
-            <div class="flex items-center gap-2">
-                <button onclick="connectOBD2()" class="px-3 py-2 rounded-xl bg-cyan-950 hover:bg-cyan-900 border border-cyan-600 text-cyan-200 font-bold text-xs flex items-center gap-1.5">
-                    <i class="fa-solid fa-bluetooth"></i><span>OBD接続</span>
-                </button>
-                <button onclick="speakCurrentTraffic()" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-200 font-bold text-xs flex items-center gap-1.5">
-                    <i class="fa-solid fa-volume-high"></i><span>音声案内</span>
-                </button>
-            </div>
+            <!-- 音声案内ボタン -->
+            <button onclick="speakCurrentTraffic()" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-200 font-bold text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-volume-high"></i><span>音声案内</span>
+            </button>
         </div>
 
-        <!-- リアルタイム道路速報テロップ -->
+        <!-- 道路速報テロップ -->
         <div class="w-full bg-black/80 border border-amber-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 overflow-hidden">
             <span class="bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded shrink-0 animate-pulse">道路速報</span>
             <div class="overflow-hidden whitespace-nowrap relative flex-1">
                 <div id="traffic-ticker-text" class="animate-ticker text-xs font-bold text-amber-300">
-                    【ライブ道路情報】気象データおよび交通インフラと同期中。安全運転でお進みください。
+                    【道路状況】ルート周辺はスムーズに流れています。安全運転でお進みください。
                 </div>
             </div>
         </div>
@@ -119,11 +114,11 @@
         <!-- 【左カラム：速度・進行状況・車両データ・天気 (5カラム)】 -->
         <section class="lg:col-span-5 flex flex-col justify-between bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl gap-3">
             
-            <!-- 1. ハイブリッド速度計（OBD ＆ GPS 両用） -->
+            <!-- 1. 速度計（ver2の純粋なGPS直読原理に復元） -->
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3.5">
                 <div class="flex items-center justify-between mb-1">
-                    <span id="speed-mode-badge" class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-cyan-500/20 text-cockpit-cyan border border-cyan-400/40">
-                        <i class="fa-solid fa-gauge-high mr-1"></i>HYBRID SPEED METER (OBD + GPS)
+                    <span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-cyan-500/20 text-cockpit-cyan border border-cyan-400/40">
+                        <i class="fa-solid fa-gauge mr-1"></i>GPS SPEED METER
                     </span>
                     <span class="text-xs font-bold text-emerald-400">最適巡航: 72〜80 km/h</span>
                 </div>
@@ -163,7 +158,7 @@
                 </div>
             </div>
 
-            <!-- 3. OBD2詳細テレメトリ -->
+            <!-- 3. OBD2テレメトリ（未接続時は完全停止） -->
             <div class="grid grid-cols-2 gap-2">
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-2.5 flex items-center justify-between">
                     <div><span class="text-[11px] font-bold text-gray-400 block">冷却水温</span></div>
@@ -195,11 +190,11 @@
             <div class="bg-black/80 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-cockpit-amber">
-                        <i id="weather-icon" class="fa-solid fa-cloud-rain text-lg"></i>
+                        <i id="weather-icon" class="fa-solid fa-sun text-lg"></i>
                     </div>
                     <div>
                         <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">目的地天気 (現地ライブ)</span>
-                        <span id="dest-weather-label" class="text-sm font-extrabold text-white">気象データ取得中...</span>
+                        <span id="dest-weather-label" class="text-sm font-extrabold text-white">取得中...</span>
                     </div>
                 </div>
                 <div class="text-right">
@@ -225,7 +220,7 @@
             <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <span class="text-[11px] font-extrabold text-cockpit-cyan uppercase"><i class="fa-solid fa-location-dot mr-1"></i>DESTINATION SPOT</span>
-                    <h2 id="dest-title" class="text-lg sm:text-xl font-extrabold text-white mt-0.5 truncate max-w-xs sm:max-w-md">大和高原カントリークラブ</h2>
+                    <h2 id="dest-title" class="text-lg sm:text-xl font-extrabold text-white mt-0.5 truncate max-w-xs sm:max-w-md">布袋駅</h2>
                 </div>
                 <div class="flex items-center gap-4 bg-black/60 border border-cockpit-border rounded-2xl px-4 py-2">
                     <div>
@@ -239,7 +234,7 @@
                 </div>
             </div>
 
-            <!-- 下部：マップ ＋ リアル道路状況モニター -->
+            <!-- 下部：マップ ＋ 道路状況モニター -->
             <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-[320px]">
                 
                 <!-- マップ -->
@@ -247,29 +242,29 @@
                     <div id="cockpit-map" class="w-full h-full min-h-[220px] z-10"></div>
                 </div>
 
-                <!-- リアル道路規制・天気モニター -->
+                <!-- 道路規制・天気モニター -->
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-cockpit-border pb-2.5 mb-2">
                         <span class="text-sm font-extrabold text-emerald-400 flex items-center gap-2">
                             <i class="fa-solid fa-road-barrier text-base"></i> 道路状況・周辺モニター
                         </span>
-                        <span class="text-[11px] font-mono bg-emerald-950 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-800">ライブ同期中</span>
+                        <span class="text-[11px] font-mono bg-emerald-950 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-800">安定稼働中</span>
                     </div>
 
                     <div class="flex-1 flex flex-col justify-around space-y-2.5 py-1">
                         <div class="bg-black/70 border border-cockpit-border rounded-2xl p-3">
-                            <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i>天候・道路規制情報</span>
-                            <span id="road-alert-text" class="text-sm sm:text-base font-extrabold text-amber-300">気象データに基づく路面状況を解析中...</span>
+                            <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i>道路規制情報</span>
+                            <span id="road-alert-text" class="text-sm sm:text-base font-extrabold text-white">主要区間に規制情報なし</span>
                         </div>
 
                         <div class="bg-black/70 border border-cockpit-border rounded-2xl p-3">
                             <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-cloud-sun text-cockpit-cyan mr-1.5"></i>道中のお天気メモ</span>
-                            <span id="road-weather-memo" class="text-sm sm:text-base font-bold text-gray-100">現地降雨・視界情報をリアルタイム反映中。</span>
+                            <span id="road-weather-memo" class="text-sm sm:text-base font-bold text-gray-100">視界良好、安定した走行コンディションです。</span>
                         </div>
 
                         <div class="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-3">
                             <span class="text-xs font-extrabold text-cockpit-emerald block mb-0.5"><i class="fa-solid fa-circle-check mr-1.5"></i>システム稼働状態</span>
-                            <span class="text-xs sm:text-sm text-gray-200">OBD & GPS ハイブリッド測位正常稼働中。</span>
+                            <span class="text-xs sm:text-sm text-gray-200">ver2方式・GPS直読スピードメーター正常稼働中。</span>
                         </div>
                     </div>
                 </div>
@@ -281,20 +276,14 @@
     <script>
         let timerSec = 0;
         let map, carMarker, destMarker, routePolyline;
-        let destLatLng = { lat: 34.755, lon: 135.982 }; // 初期：大和高原カントリークラブ
+        let destLatLng = { lat: 35.340, lon: 136.877 }; // 初期：布袋駅
         let currentLatLng = null;
         let initialTotalDist = null;
-        let isConnectedOBD = false;
-        let lastGpsPos = null;
-        let lastGpsTime = Date.now();
-        let currentGpsSpeedKmh = 0;
-        let currentObdSpeedKmh = 0;
-        let dynamicRoadMessage = "主要幹線道路の交通状況を監視中";
 
         window.onload = function() {
             // マップ初期化
             try {
-                map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 12);
+                map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
                 const carIcon = L.divIcon({
@@ -312,44 +301,30 @@
                 console.log('Map init error:', e);
             }
 
-            // GPS高精度トラッキング（速度と位置を常時算出）
+            // ver2の純粋なGPS速度計測原理（coords.speedを直接km/h換算。停止時は確実に0）
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        const now = Date.now();
                         currentLatLng = { lat, lon };
 
                         if (carMarker) carMarker.setLatLng([lat, lon]);
 
-                        // GPS速度の二重算出（APIのcoords.speedに加え、前後の位置と経過時間から移動速度を高精度に算出）
-                        if (lastGpsPos) {
-                            const distMeters = calcHaversineMeters(lastGpsPos.lat, lastGpsPos.lon, lat, lon);
-                            const timeSec = (now - lastGpsTime) / 1000;
-                            if (timeSec > 0.2) {
-                                const calculatedKmh = (distMeters / timeSec) * 3.6;
-                                // ノイズ（微小な揺れ）をカットしつつ速度化
-                                currentGpsSpeedKmh = calculatedKmh > 2.0 ? Math.round(calculatedKmh) : 0;
-                            }
+                        // GPSスピード直読（m/s -> km/h）
+                        const speedMs = position.coords.speed;
+                        let kmh = 0;
+                        if (speedMs !== null && speedMs >= 0) {
+                            kmh = Math.round(speedMs * 3.6);
                         }
-                        lastGpsPos = { lat, lon };
-                        lastGpsTime = now;
+                        document.getElementById('val-speed').textContent = kmh;
 
-                        // API側speedがある場合はそちらも加味
-                        if (position.coords.speed !== null && position.coords.speed >= 0) {
-                            const apiKmh = Math.round(position.coords.speed * 3.6);
-                            if (apiKmh > currentGpsSpeedKmh) currentGpsSpeedKmh = apiKmh;
-                        }
-
-                        updateHybridSpeedDisplay();
-                        triggerRouteUpdate();
+                        updateRouteAndWeather();
                     },
                     (error) => {
-                        currentGpsSpeedKmh = 0;
-                        updateHybridSpeedDisplay();
+                        document.getElementById('val-speed').textContent = '0';
                     },
-                    { enableHighAccuracy: true, maximumAge: 500, timeout: 10000 }
+                    { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
                 );
             }
 
@@ -363,71 +338,14 @@
             }, 1000);
         };
 
-        // ==================== ハイブリッド速度合成エンジン ====================
-        function updateHybridSpeedDisplay() {
-            let activeSpeed = 0;
-            if (isConnectedOBD) {
-                activeSpeed = currentObdSpeedKmh;
-            } else {
-                activeSpeed = currentGpsSpeedKmh;
-            }
-            document.getElementById('val-speed').textContent = activeSpeed;
-        }
-
-        // ==================== OBD2 Bluetooth 接続 ====================
-        async function connectOBD2() {
-            if (!navigator.bluetooth) {
-                alert('お使いのブラウザはWeb Bluetoothに対応していません。Bluefyブラウザをご利用ください。');
-                return;
-            }
-            try {
-                document.getElementById('status-text').textContent = 'OBD2デバイス検索中...';
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2']
-                });
-                const server = await device.gatt.connect();
-                
-                isConnectedOBD = true;
-                document.getElementById('status-text').textContent = 'OBD2 ＆ GPS ハイブリッド連動中';
-                document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse';
-                document.getElementById('speed-mode-badge').className = 'px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-500/20 text-cockpit-emerald border border-emerald-400/40';
-                document.getElementById('speed-mode-badge').innerHTML = '<i class="fa-solid fa-car mr-1"></i>OBD2 + GPS HYBRID MODE';
-
-                startRealOBDPolling();
-            } catch (error) {
-                isConnectedOBD = false;
-                document.getElementById('status-text').textContent = 'OBD接続失敗 (GPSフォールバック稼働中)';
-                document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
-            }
-        }
-
-        function startRealOBDPolling() {
-            setInterval(() => {
-                if (!isConnectedOBD) return;
-                // OBD接続時は実車の車速・RPM・水温等を取り込む（ここではデモとして車速が取れた場合の挙動を反映）
-                currentObdSpeedKmh = currentGpsSpeedKmh > 0 ? currentGpsSpeedKmh : 0; // 実車速連動
-                updateHybridSpeedDisplay();
-
-                document.getElementById('val-rpm').textContent = currentObdSpeedKmh > 0 ? "2100" : "850";
-                document.getElementById('bar-rpm').style.width = currentObdSpeedKmh > 0 ? "35%" : "14%";
-                document.getElementById('val-coolant').textContent = "88";
-                document.getElementById('val-voltage').textContent = "14.2";
-                document.getElementById('val-hv-soc').textContent = "76";
-                document.getElementById('val-throttle').textContent = currentObdSpeedKmh > 0 ? "18" : "0";
-                document.getElementById('val-intake').textContent = "31";
-                document.getElementById('val-load').textContent = currentObdSpeedKmh > 0 ? "28" : "12";
-            }, 500);
-        }
-
-        // ==================== 距離・ルート計算 ====================
-        function triggerRouteUpdate() {
+        function updateRouteAndWeather() {
             if (currentLatLng && destLatLng) {
                 fetchRoadRoute(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
                 fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
             }
         }
 
+        // ルート取得
         async function fetchRoadRoute(lat1, lon1, lat2, lon2) {
             try {
                 const straightDist = calcHaversineKm(lat1, lon1, lat2, lon2);
@@ -441,13 +359,7 @@
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
                     totalRouteKm = (route.distance / 1000);
-                    
-                    if (straightDist < 15 && totalRouteKm > straightDist * 2.5) {
-                        totalRouteKm = straightDist * 1.15;
-                        routeCoords = [[lat1, lon1], [lat2, lon2]];
-                    } else {
-                        routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                    }
+                    routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
                 } else {
                     routeCoords = [[lat1, lon1], [lat2, lon2]];
                 }
@@ -477,12 +389,11 @@
 
                 if (map) {
                     if (routePolyline) map.removeLayer(routePolyline);
-                    routePolyline = L.polyline(routeCoords.length > 0 ? routeCoords : [[lat1, lon1], [lat2, lon2]], { color: '#00E5FF', weight: 5, opacity: 0.9 }).addTo(map);
+                    routePolyline = L.polyline(routeCoords, { color: '#00E5FF', weight: 5, opacity: 0.9 }).addTo(map);
                     map.fitBounds(routePolyline.getBounds(), { padding: [35, 35] });
                 }
-
             } catch (e) {
-                console.log('Route fallback used.');
+                console.log('Route fallback');
             }
         }
 
@@ -492,10 +403,6 @@
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        function calcHaversineMeters(lat1, lon1, lat2, lon2) {
-            return calcHaversineKm(lat1, lon1, lat2, lon2) * 1000;
         }
 
         function clearSearchInput() {
@@ -521,64 +428,38 @@
                     if (destMarker && map) {
                         destMarker.setLatLng([destLatLng.lat, destLatLng.lon]);
                     }
-                    triggerRouteUpdate();
+                    updateRouteAndWeather();
                 }
             } catch (e) {
-                console.log('Search error.');
+                console.log('Search error');
             }
         }
 
-        // ==================== リアル気象連動 ====================
+        // 天気取得
         async function fetchDestinationWeather(lat, lon) {
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m`);
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
                 const data = await res.json();
                 if (data && data.current) {
                     const temp = Math.round(data.current.temperature_2m);
                     const code = data.current.weather_code;
-                    const wind = data.current.wind_speed_10m;
-                    
                     let desc = '晴れ';
                     let iconClass = 'fa-solid fa-sun text-amber-400';
-                    let roadAdvice = '主要幹線道路でスムーズな交通状況です。';
-                    let weatherMemo = '視界良好、快適なコンディションです。';
 
-                    if (code >= 1 && code <= 3) {
-                        desc = '曇り';
-                        iconClass = 'fa-solid fa-cloud text-gray-300';
-                        roadAdvice = '交通量増加による一部区間の流れに注意';
-                    } else if (code >= 45 && code <= 48) {
-                        desc = '濃霧';
-                        iconClass = 'fa-solid fa-smog text-gray-400';
-                        roadAdvice = '濃霧注意：フォグランプ点灯および減速走行推奨';
-                        weatherMemo = '濃霧による視界不良が発生しています。';
-                    } else if (code >= 51 && code <= 67) {
-                        desc = '雨（降雨中）';
-                        iconClass = 'fa-solid fa-cloud-rain text-cockpit-cyan';
-                        roadAdvice = '降雨注意：路面ウェット・スリップ事故に厳重警戒';
-                        weatherMemo = '雨天のため、十分な車間距離を確保してください。';
-                    } else if (code >= 71 && code <= 77) {
-                        desc = '雪';
-                        iconClass = 'fa-solid fa-snowflake text-white';
-                        roadAdvice = '降雪・凍結注意：冬用タイヤまたはチェーン必携';
-                        weatherMemo = '路面凍結のおそれがあります。慎重な運転を。';
-                    }
-
-                    if (wind > 8.0) {
-                        roadAdvice += ' ／ 強風注意：高架部での横風に警戒';
-                    }
-
-                    dynamicRoadMessage = roadAdvice;
+                    if (code >= 1 && code <= 3) { desc = '曇り'; iconClass = 'fa-solid fa-cloud text-gray-300'; }
+                    else if (code >= 45 && code <= 48) { desc = '霧'; iconClass = 'fa-solid fa-smog text-gray-400'; }
+                    else if (code >= 51 && code <= 67) { desc = '雨'; iconClass = 'fa-solid fa-cloud-rain text-cockpit-cyan'; }
+                    else if (code >= 71 && code <= 77) { desc = '雪'; iconClass = 'fa-solid fa-snowflake text-white'; }
 
                     document.getElementById('weather-icon').className = iconClass + ' text-lg';
                     document.getElementById('dest-weather-label').textContent = `${desc} (現地ライブ)`;
                     document.getElementById('dest-weather-temp').textContent = `${temp}°C`;
-                    document.getElementById('road-alert-text').textContent = roadAdvice;
-                    document.getElementById('road-weather-memo').textContent = weatherMemo;
-                    document.getElementById('traffic-ticker-text').textContent = `【リアル道路速報】${roadAdvice} ／ 現地気温 ${temp}°C (${desc})`;
+                    document.getElementById('road-alert-text').textContent = desc.includes('雨') ? '降雨によるスリップ注意' : '主要区間に規制情報なし';
+                    document.getElementById('road-weather-memo').textContent = desc.includes('雨') ? '路面が濡れています。減速してください。' : '視界良好、安定した走行コンディションです。';
+                    document.getElementById('traffic-ticker-text').textContent = `【リアル道路速報】現地の天気：${desc} (${temp}°C) ／ 安全運転でお進みください。`;
                 }
             } catch (e) {
-                console.log('Weather fetch error');
+                console.log('Weather error');
             }
         }
 
@@ -586,7 +467,7 @@
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
             const destName = document.getElementById('dest-title').textContent;
-            const message = `道路音声案内です。現在の目的地は、${destName}です。道路状況のお知らせです。${dynamicRoadMessage}。安全運転でお進みください。`;
+            const message = `道路音声案内です。現在の目的地は、${destName}です。安全運転でお進みください。`;
             const uttr = new SpeechSynthesisUtterance(message);
             uttr.lang = 'ja-JP';
             window.speechSynthesis.speak(uttr);
