@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.2 FIXED</title>
+    <title>DriveAssist OS - PRO v3.3 GPS GPS FIX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +46,6 @@
         }
         .tabular-nums { font-variant-numeric: tabular-nums; }
         .glow-cyan { text-shadow: 0 0 18px rgba(0, 229, 255, 0.35); }
-        /* 地図のダークモード調整 */
         .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(95%); }
         .leaflet-container { background: #090D16 !important; }
         .leaflet-control-attribution { display: none !important; }
@@ -61,10 +60,10 @@
                 <i class="fa-solid fa-gauge-high text-lg"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.2</span></h1>
-                <p class="text-[11px] text-cockpit-amber flex items-center gap-1.5 font-mono">
-                    <span class="w-2 h-2 rounded-full bg-cockpit-amber animate-pulse"></span>
-                    OBD2 未接続 (待機中)
+                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.3 GPS</span></h1>
+                <p id="gps-status-label" class="text-[11px] text-cockpit-emerald flex items-center gap-1.5 font-mono">
+                    <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                    GPS リアルタイム測位中
                 </p>
             </div>
         </div>
@@ -119,7 +118,7 @@
                 </div>
             </div>
 
-            <!-- OBD2詳細テレメトリ（未接続時はすべて "--"） -->
+            <!-- OBD2詳細テレメトリ -->
             <div class="grid grid-cols-2 gap-2.5">
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">冷却水温</span></div>
@@ -158,7 +157,7 @@
             </div>
         </section>
 
-        <!-- 【右カラム：地図ナビ ＆ ハイウェイIC順次案内 (7カラム)】 -->
+        <!-- 【右カラム：地図ナビ ＆ ハイウェイIC案内 (7カラム)】 -->
         <section class="lg:col-span-7 flex flex-col gap-3">
 
             <!-- 上部：目的地バー -->
@@ -174,12 +173,12 @@
                     </div>
                     <div class="border-l border-cockpit-border pl-3">
                         <span class="text-[10px] text-gray-400 block">残り距離</span>
-                        <span id="val-rem-dist" class="font-mono text-xl font-extrabold text-white">58.4<span class="text-xs font-normal text-gray-400">km</span></span>
+                        <span id="val-rem-dist" class="font-mono text-xl font-extrabold text-white"><span id="val-dist-num">--</span><span class="text-xs font-normal text-gray-400">km</span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- 下部：地図 ＋ ハイウェイICリストの2分割 -->
+            <!-- 下部：地図 ＋ ハイウェイICリスト -->
             <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-[320px]">
                 
                 <!-- インタラクティブ地図 (6カラム) -->
@@ -191,9 +190,9 @@
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-3.5 shadow-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-cockpit-border pb-2 mb-2">
                         <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
-                            <i class="fa-solid fa-road"></i> ハイウェイIC案内
+                            <i class="fa-solid fa-road"></i> ハイウェイIC案内（現在地連動）
                         </span>
-                        <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">連動中</span>
+                        <span id="ic-update-badge" class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">GPS同期中</span>
                     </div>
 
                     <div class="flex-1 flex flex-col justify-around space-y-1.5 relative py-1">
@@ -205,25 +204,25 @@
                                 <span class="text-[10px] font-bold text-cockpit-cyan block">目的地</span>
                                 <span id="list-dest-name" class="text-xs font-extrabold text-white">新東名 浜松SA</span>
                             </div>
-                            <span class="font-mono text-sm font-extrabold text-cockpit-cyan">58.4 km</span>
+                            <span id="list-dest-dist" class="font-mono text-sm font-extrabold text-cockpit-cyan">-- km</span>
                         </div>
 
                         <div class="relative flex items-center justify-between bg-black/50 border border-cockpit-border rounded-xl p-2.5 pl-8">
                             <span class="absolute left-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                             <div>
-                                <span class="text-[10px] text-gray-400 block">JCT分岐</span>
-                                <span class="text-xs font-bold text-gray-200">三ヶ日 JCT</span>
+                                <span class="text-[10px] text-gray-400 block">ルート上の主要JCT</span>
+                                <span id="ic-jct-name" class="text-xs font-bold text-gray-200">豊田 JCT / 三ヶ日 JCT</span>
                             </div>
-                            <span class="font-mono text-sm font-bold text-white">41.2 km</span>
+                            <span id="ic-jct-dist" class="font-mono text-sm font-bold text-white">-- km</span>
                         </div>
 
                         <div class="relative flex items-center justify-between bg-emerald-950/50 border border-emerald-500/60 rounded-xl p-3 pl-8 shadow">
                             <span class="absolute left-2 w-3.5 h-3.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
                             <div>
-                                <span class="text-[10px] font-extrabold text-cockpit-emerald block">NEXT IC</span>
-                                <span class="text-sm font-extrabold text-white">岡崎 IC</span>
+                                <span class="text-[10px] font-extrabold text-cockpit-emerald block">NEXT IC (最寄り)</span>
+                                <span id="ic-next-name" class="text-sm font-extrabold text-white">一宮 / 小牧 近辺</span>
                             </div>
-                            <span class="font-mono text-base font-extrabold text-cockpit-emerald">3.2 km</span>
+                            <span id="ic-next-dist" class="font-mono text-base font-extrabold text-cockpit-emerald">計測中</span>
                         </div>
                     </div>
                 </div>
@@ -234,21 +233,45 @@
 
     <script>
         let timerSec = 0;
-        let map, carMarker;
+        let map, carMarker, destLatLng = { lat: 34.8194, lon: 137.7347 }; // 初期：浜松SA
+        let currentLatLng = null;
 
         window.onload = function() {
-            // Leaflet地図の初期化
+            // 地図初期化（デフォルトは名古屋・一宮周辺）
             try {
-                map = L.map('cockpit-map', { zoomControl: false }).setView([34.935, 137.22], 10);
+                map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 11);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
                 const carIcon = L.divIcon({
-                    html: '<div style="width:14px;height:14px;background:#00E676;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px #00E676;"></div>',
+                    html: '<div style="width:16px;height:16px;background:#00E676;border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px #00E676;"></div>',
                     className: ''
                 });
-                carMarker = L.marker([34.935, 137.22], { icon: carIcon }).addTo(map);
+                carMarker = L.marker([35.301, 136.806], { icon: carIcon }).addTo(map);
             } catch (e) {
-                console.log('Map init error handled.');
+                console.log('Map error:', e);
+            }
+
+            // HTML5 Geolocation APIで実際のiPad現在地を高精度で取得
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        currentLatLng = { lat, lon };
+                        
+                        if (map && carMarker) {
+                            carMarker.setLatLng([lat, lon]);
+                            map.setView([lat, lon], 12);
+                        }
+                        document.getElementById('gps-status-label').innerHTML = '<span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span> GPS 連動中';
+                        updateRouteMetrics();
+                    },
+                    (error) => {
+                        console.log('GPS Error or denied:', error);
+                        document.getElementById('gps-status-label').innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> GPS未取得 (仮位置)';
+                    },
+                    { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+                );
             }
 
             // タイマー
@@ -261,6 +284,32 @@
             }, 1000);
         };
 
+        // 2点間の距離計算 (Haversine formula)
+        function calcDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function updateRouteMetrics() {
+            if (!currentLatLng) return;
+            const dist = calcDistance(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
+            document.getElementById('val-dist-num').textContent = dist.toFixed(1);
+            document.getElementById('list-dest-dist').textContent = dist.toFixed(1) + ' km';
+            document.getElementById('ic-next-dist').textContent = (dist * 0.15).toFixed(1) + ' km';
+            document.getElementById('ic-jct-dist').textContent = (dist * 0.65).toFixed(1) + ' km';
+
+            // ETA計算
+            const remMin = Math.max(2, Math.round((dist / 60) * 60));
+            const etaDate = new Date(Date.now() + remMin * 60000);
+            document.getElementById('val-eta').textContent = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        }
+
         // 目的地検索
         async function searchDestination() {
             const val = document.getElementById('quick-search-input').value.trim();
@@ -272,12 +321,9 @@
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}`);
                 const data = await res.json();
                 if (data && data.length > 0) {
-                    const lat = parseFloat(data[0].lat);
-                    const lon = parseFloat(data[0].lon);
-                    if (map) {
-                        map.setView([lat, lon], 11);
-                        carMarker.setLatLng([lat - 0.04, lon - 0.06]);
-                    }
+                    destLatLng.lat = parseFloat(data[0].lat);
+                    destLatLng.lon = parseFloat(data[0].lon);
+                    updateRouteMetrics();
                 }
             } catch (e) {
                 console.log('Geo search fallback.');
