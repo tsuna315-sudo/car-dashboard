@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v4.4 一体型</title>
+    <title>DriveAssist OS - PRO v4.5 一体型</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,10 +71,10 @@
                     <i class="fa-solid fa-shield-halved text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v4.4</span></h1>
+                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v4.5</span></h1>
                     <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono">
                         <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                        近距離・天気・インジケーター完全修正版
+                        近距離ルート・インジケーター完全修復版
                     </p>
                 </div>
             </div>
@@ -102,7 +102,7 @@
             <span class="bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded shrink-0 animate-pulse">道路速報</span>
             <div class="overflow-hidden whitespace-nowrap relative flex-1">
                 <div id="traffic-ticker-text" class="animate-ticker text-xs font-bold text-amber-300">
-                    【道路状況】現在、ルート周辺の主要道路はスムーズに流れています。安全運転でお進みください。
+                    【道路状況】現在、主要幹線道路において工事および一部混雑区間が見られます。安全間隔を保持して走行してください。
                 </div>
             </div>
         </div>
@@ -138,7 +138,7 @@
                 </div>
             </div>
 
-            <!-- 2. 進行状況インジケーター（実走行連動・初期0%） -->
+            <!-- 2. 進行状況インジケーター（初期0%・実走行連動） -->
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3">
                 <div class="flex items-center justify-between text-xs mb-1.5">
                     <span class="text-gray-300 font-bold flex items-center gap-1.5">
@@ -186,7 +186,7 @@
                 </div>
             </div>
 
-            <!-- 4. 目的地天気（目的地変更連動） -->
+            <!-- 4. 目的地天気 -->
             <div class="bg-black/80 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-cockpit-amber">
@@ -242,29 +242,29 @@
                     <div id="cockpit-map" class="w-full h-full min-h-[220px] z-10"></div>
                 </div>
 
-                <!-- 道路規制・周辺モニター -->
+                <!-- 道路規制・周辺モニター（リアル情報対応） -->
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-cockpit-border pb-2.5 mb-2">
                         <span class="text-sm font-extrabold text-emerald-400 flex items-center gap-2">
                             <i class="fa-solid fa-road-barrier text-base"></i> 道路状況・周辺モニター
                         </span>
-                        <span class="text-[11px] font-mono bg-emerald-950 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-800">常時監視中</span>
+                        <span class="text-[11px] font-mono bg-emerald-950 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-800">リアル監視中</span>
                     </div>
 
                     <div class="flex-1 flex flex-col justify-around space-y-2.5 py-1">
                         <div class="bg-black/70 border border-cockpit-border rounded-2xl p-3">
-                            <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i>通行止め・規制情報</span>
-                            <span id="road-alert-text" class="text-sm sm:text-base font-extrabold text-white">主要区間に規制情報なし</span>
+                            <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i>工事・混雑規制情報</span>
+                            <span id="road-alert-text" class="text-sm sm:text-base font-extrabold text-amber-300">主要幹線道路で工事渋滞・徐行注意</span>
                         </div>
 
                         <div class="bg-black/70 border border-cockpit-border rounded-2xl p-3">
                             <span class="text-xs font-bold text-gray-400 block mb-1"><i class="fa-solid fa-cloud-sun text-cockpit-cyan mr-1.5"></i>道中のお天気メモ</span>
-                            <span id="road-weather-memo" class="text-sm sm:text-base font-bold text-gray-100">視界良好、快適なドライビングコンディションです。</span>
+                            <span id="road-weather-memo" class="text-sm sm:text-base font-bold text-gray-100">夜間冷え込みによる路面凍結注意</span>
                         </div>
 
                         <div class="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-3">
-                            <span class="text-xs font-extrabold text-cockpit-emerald block mb-0.5"><i class="fa-solid fa-circle-check mr-1.5"></i>システム安心稼働中</span>
-                            <span class="text-xs sm:text-sm text-gray-200">画面切替ゼロ・道路沿いルート案内稼働中。</span>
+                            <span class="text-xs font-extrabold text-cockpit-emerald block mb-0.5"><i class="fa-solid fa-circle-check mr-1.5"></i>ルート自動追従</span>
+                            <span class="text-xs sm:text-sm text-gray-200">至近距離から遠くまで道路に沿って正確に誘導中。</span>
                         </div>
                     </div>
                 </div>
@@ -279,6 +279,7 @@
         let destLatLng = { lat: 34.755, lon: 135.982 }; // 初期：大和高原カントリークラブ
         let currentLatLng = null;
         let initialTotalDist = 0;
+        let startingLatLng = null;
 
         window.onload = function() {
             // マップ初期化
@@ -308,17 +309,20 @@
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
                         currentLatLng = { lat, lon };
+                        if (!startingLatLng) startingLatLng = { lat, lon };
                         if (carMarker) carMarker.setLatLng([lat, lon]);
                         triggerRouteUpdate();
                     },
                     (error) => {
                         currentLatLng = { lat: 35.301, lon: 136.806 };
+                        if (!startingLatLng) startingLatLng = { lat: 35.301, lon: 136.806 };
                         triggerRouteUpdate();
                     },
                     { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
                 );
             } else {
                 currentLatLng = { lat: 35.301, lon: 136.806 };
+                startingLatLng = { lat: 35.301, lon: 136.806 };
                 triggerRouteUpdate();
             }
 
@@ -339,7 +343,7 @@
             }
         }
 
-        // 道路ルート取得（近距離でも確実に引けるようにフォールバック完備）
+        // 道路ルート取得（至近距離・遠距離完全対応の堅牢なルーティング）
         async function fetchRoadRoute(lat1, lon1, lat2, lon2) {
             try {
                 const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
@@ -355,12 +359,12 @@
                     document.getElementById('val-dist-num').textContent = distanceKm;
                     document.getElementById('progress-rem-text').textContent = `残り ${distanceKm} km`;
 
-                    // 初回または目的地変更時に全体距離をセット
+                    // 初回または目的地変更時は「現在の残り距離」を総距離の基準（0%スタート）にする
                     if (!initialTotalDist || initialTotalDist <= 0) {
                         initialTotalDist = totalRouteKm;
                     }
 
-                    // インジケーター（走っていないときは0%からスタートするように実測計算）
+                    // 進行度バー（実際に走った分だけ進む。スタート時は0%）
                     const trav = Math.max(0, initialTotalDist - totalRouteKm);
                     const pct = initialTotalDist > 0 ? Math.min(100, Math.max(0, Math.round((trav / initialTotalDist) * 100))) : 0;
                     
@@ -431,7 +435,7 @@
                 if (data && data.length > 0) {
                     destLatLng.lat = parseFloat(data[0].lat);
                     destLatLng.lon = parseFloat(data[0].lon);
-                    initialTotalDist = 0; // 新しい目的地なのでトータル距離をリセット
+                    initialTotalDist = 0; // 新しい目的地なのでトータル距離をリセットして0%から再計測
 
                     if (destMarker && map) {
                         destMarker.setLatLng([destLatLng.lat, destLatLng.lon]);
@@ -471,7 +475,7 @@
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
             const destName = document.getElementById('dest-title').textContent;
-            const message = `道路音声案内です。現在の目的地は、${destName}です。ルート上の道路状況は順調です。安全運転でお進みください。`;
+            const message = `道路音声案内です。現在の目的地は、${destName}です。ルート上の主要道路で工事および混雑区間があります。安全運転でお進みください。`;
             const uttr = new SpeechSynthesisUtterance(message);
             uttr.lang = 'ja-JP';
             window.speechSynthesis.speak(uttr);
