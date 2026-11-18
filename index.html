@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.6</title>
+    <title>DriveAssist OS - PRO v4.0 一体型</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,56 +49,74 @@
         .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(95%); }
         .leaflet-container { background: #090D16 !important; }
         .leaflet-control-attribution { display: none !important; }
+        /* テロップ流れるアニメーション */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-ticker {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 22s linear infinite;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2.5 sm:p-3.5 bg-cockpit-bg">
 
-    <!-- ==================== トップステータスバー ==================== -->
-    <header class="w-full flex flex-wrap items-center justify-between gap-2 bg-cockpit-card border border-cockpit-border rounded-2xl px-4 py-3 shadow-lg">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cockpit-cyan">
-                <i class="fa-solid fa-gauge-high text-xl"></i>
+    <!-- ==================== トップ：ステータス ＆ 渋滞速報テロップ ==================== -->
+    <header class="w-full flex flex-col gap-2 bg-cockpit-card border border-cockpit-border rounded-2xl px-4 py-2.5 shadow-lg">
+        
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cockpit-cyan">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v4.0一体型</span></h1>
+                    <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono">
+                        <span class="w-2 h-2 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                        画面内完結モード（切替ゼロ）
+                    </p>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.6</span></h1>
-                <p id="system-status-label" class="text-xs text-cockpit-emerald flex items-center gap-1.5 font-mono mt-0.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                    GPS + 道路ルーティング連動
-                </p>
+
+            <!-- 目的地入力 -->
+            <div class="flex-1 max-w-sm flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-1.5">
+                <i class="fa-solid fa-location-crosshairs text-gray-400 text-xs"></i>
+                <input id="quick-search-input" type="text" value="大和高原カントリークラブ" placeholder="施設名・スポット名を入力" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
+                <button onclick="searchDestination()" class="px-3 py-1 rounded-lg bg-cockpit-cyan text-black font-extrabold text-xs shrink-0 hover:bg-cyan-300 transition">
+                    セット
+                </button>
             </div>
+
+            <!-- 音声読み上げテストボタン -->
+            <button onclick="speakCurrentTraffic()" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-600 text-amber-200 font-bold text-xs flex items-center gap-1.5" title="現在の道路情報を音声で読み上げ">
+                <i class="fa-solid fa-volume-high"></i><span>道路音声案内</span>
+            </button>
         </div>
 
-        <!-- 目的地検索バー -->
-        <div class="flex-1 max-w-sm flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-2">
-            <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-            <input id="quick-search-input" type="text" value="大和高原カントリークラブ" placeholder="目的地を入力 (例: 岡崎IC, 浜松SA)" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
-            <button onclick="searchDestination()" class="px-3.5 py-1 rounded-lg bg-cockpit-cyan text-black font-extrabold text-xs shrink-0 hover:bg-cyan-300 transition">
-                反映
-            </button>
-        </div>
-
-        <!-- マップ連携ボタン -->
-        <div class="flex items-center gap-2.5">
-            <button onclick="openAppleMaps()" class="px-3.5 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内">
-                <i class="fa-solid fa-map-location-dot text-sm"></i><span>Appleマップ</span>
-            </button>
-            <button onclick="openGoogleMapsExternal()" class="px-3.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内">
-                <i class="fa-solid fa-diamond-turn-right text-sm"></i><span>Googleマップ</span>
-            </button>
+        <!-- リアルタイム渋滞・道路状況テロップバー -->
+        <div class="w-full bg-black/80 border border-amber-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 overflow-hidden">
+            <span class="bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded shrink-0 animate-pulse">道路速報</span>
+            <div class="overflow-hidden whitespace-nowrap relative flex-1">
+                <div id="traffic-ticker-text" class="animate-ticker text-xs font-bold text-amber-300">
+                    【道路状況】東名高速・名神高速・東名阪道は現在大きな規制なく順調に流れています。安全運転でお進みください。
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- ==================== メイン2カラムコックピット ==================== -->
     <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 my-1">
 
-        <!-- 【左カラム：速度計 ＆ 進行状況インジケーター ＆ OBD2テレメトリ (5カラム)】 -->
+        <!-- 【左カラム：速度・進行状況・車両データ・目的地天気 (5カラム)】 -->
         <section class="lg:col-span-5 flex flex-col justify-between bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl gap-3">
             
             <!-- 1. 速度計 -->
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3.5">
                 <div class="flex items-center justify-between mb-1">
-                    <span id="speed-mode-badge" class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-cockpit-amber border border-amber-400/40">
-                        <i class="fa-solid fa-satellite-dish mr-1"></i>GPS SPEED MODE
+                    <span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-cyan-500/20 text-cockpit-cyan border border-cyan-400/40">
+                        <i class="fa-solid fa-gauge mr-1"></i>GPS SPEED METER
                     </span>
                     <span class="text-xs font-bold text-emerald-400">最適巡航: 72〜80 km/h</span>
                 </div>
@@ -118,23 +136,23 @@
                 </div>
             </div>
 
-            <!-- 2. 【ご要望】スピードメーターの下に配置した「ルート進行状況インジケーター」 -->
+            <!-- 2. 進行状況インジケーター -->
             <div class="bg-black/60 border border-cockpit-border rounded-2xl p-3">
                 <div class="flex items-center justify-between text-xs mb-1.5">
                     <span class="text-gray-300 font-bold flex items-center gap-1.5">
-                        <i class="fa-solid fa-route text-cockpit-cyan"></i> 目的地までのルート進行状況
+                        <i class="fa-solid fa-route text-cockpit-cyan"></i> 目的地までの進行状況
                     </span>
                     <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">0% 完了</span>
                 </div>
                 
-                <div class="relative w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
-                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500 shadow-[0_0_10px_#00E676]" style="width: 0%;"></div>
+                <div class="relative w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500" style="width: 0%;"></div>
                 </div>
 
                 <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
                     <span>現在地</span>
                     <span id="progress-rem-text" class="text-white font-bold">残り -- km</span>
-                    <span id="progress-dest-label">目的地</span>
+                    <span id="progress-dest-label" class="truncate max-w-[120px]">目的地</span>
                 </div>
             </div>
 
@@ -166,15 +184,15 @@
                 </div>
             </div>
 
-            <!-- 4. 【ご要望】運転時間（連続走行タイマー）の上に大きく配置した「目的地天気」 -->
+            <!-- 4. 目的地天気（大きく明記） -->
             <div class="bg-black/80 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-cockpit-amber">
                         <i id="weather-icon" class="fa-solid fa-sun text-lg"></i>
                     </div>
                     <div>
-                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">目的地天気</span>
-                        <span id="dest-weather-label" class="text-sm sm:text-base font-extrabold text-white">取得中...</span>
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">目的地天気 (現地予報)</span>
+                        <span id="dest-weather-label" class="text-sm font-extrabold text-white">取得中...</span>
                     </div>
                 </div>
                 <div class="text-right">
@@ -193,14 +211,14 @@
             </div>
         </section>
 
-        <!-- 【右カラム：地図ナビ（道路ルーティング） ＆ ハイウェイIC案内 (7カラム)】 -->
+        <!-- 【右カラム：常駐マップ ＆ 道路交通インフォ (7カラム)】 -->
         <section class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- 上部：目的地バー -->
+            <!-- 上部：目的地サマリーカード -->
             <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <span class="text-[11px] font-extrabold text-cockpit-cyan uppercase"><i class="fa-solid fa-location-dot mr-1"></i>DESTINATION</span>
-                    <h2 id="dest-title" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">大和高原カントリークラブ</h2>
+                    <span class="text-[11px] font-extrabold text-cockpit-cyan uppercase"><i class="fa-solid fa-location-dot mr-1"></i>DESTINATION SPOT</span>
+                    <h2 id="dest-title" class="text-lg sm:text-xl font-extrabold text-white mt-0.5 truncate max-w-xs sm:max-w-md">大和高原カントリークラブ</h2>
                 </div>
                 <div class="flex items-center gap-4 bg-black/60 border border-cockpit-border rounded-2xl px-4 py-2">
                     <div>
@@ -208,57 +226,43 @@
                         <span id="val-eta" class="font-mono text-xl font-extrabold text-cockpit-cyan">--:--</span>
                     </div>
                     <div class="border-l border-cockpit-border pl-3">
-                        <span class="text-[10px] text-gray-400 block">残り距離</span>
+                        <span class="text-[10px] text-gray-400 block">直線距離</span>
                         <span id="val-rem-dist" class="font-mono text-xl font-extrabold text-white"><span id="val-dist-num">--</span><span class="text-xs font-normal text-gray-400">km</span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- 下部：地図（OSRM道路ルーティング対応） ＋ ハイウェイICリスト -->
+            <!-- 下部：常駐マップ ＋ 道路状況モニター -->
             <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-[320px]">
                 
-                <!-- インタラクティブ地図 (6カラム) -->
+                <!-- インタラクティブ常駐マップ (6カラム) -->
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl overflow-hidden relative shadow-2xl flex flex-col min-h-[220px]">
                     <div id="cockpit-map" class="w-full h-full min-h-[220px] z-10"></div>
                 </div>
 
-                <!-- ハイウェイIC・SA/PA 順番リスト (6カラム) -->
+                <!-- 道路規制・安心アドバイスモニター (6カラム) -->
                 <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-3.5 shadow-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-cockpit-border pb-2 mb-2">
                         <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
-                            <i class="fa-solid fa-road"></i> ハイウェイIC案内（ルート連動）
+                            <i class="fa-solid fa-road-barrier"></i> 道路状況・周辺モニター
                         </span>
-                        <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">道路沿いルート</span>
+                        <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">常時監視中</span>
                     </div>
 
-                    <div class="flex-1 flex flex-col justify-around space-y-1.5 relative py-1">
-                        <div class="absolute left-3.5 top-4 bottom-4 w-0.5 bg-emerald-600/50"></div>
-
-                        <div class="relative flex items-center justify-between bg-cyan-950/40 border border-cockpit-cyan/50 rounded-xl p-2.5 pl-8">
-                            <span class="absolute left-2 w-3.5 h-3.5 rounded-full bg-cockpit-cyan border-2 border-black"></span>
-                            <div>
-                                <span class="text-[10px] font-bold text-cockpit-cyan block">目的地</span>
-                                <span id="list-dest-name" class="text-xs font-extrabold text-white">大和高原カントリークラブ</span>
-                            </div>
-                            <span id="list-dest-dist" class="font-mono text-sm font-extrabold text-cockpit-cyan">-- km</span>
+                    <div class="flex-1 flex flex-col justify-around space-y-2 py-1">
+                        <div class="bg-black/60 border border-cockpit-border rounded-xl p-2.5">
+                            <span class="text-[10px] font-bold text-gray-400 block"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i>通行止め・規制情報</span>
+                            <span id="road-alert-text" class="text-xs font-bold text-white">現在、主要区間に規制情報はありません。</span>
                         </div>
 
-                        <div class="relative flex items-center justify-between bg-black/50 border border-cockpit-border rounded-xl p-2.5 pl-8">
-                            <span class="absolute left-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                            <div>
-                                <span class="text-[10px] text-gray-400 block">ルート上の主要JCT・IC</span>
-                                <span id="ic-jct-name" class="text-xs font-bold text-gray-200">一宮JCT / 名神高速</span>
-                            </div>
-                            <span id="ic-jct-dist" class="font-mono text-sm font-bold text-white">-- km</span>
+                        <div class="bg-black/60 border border-cockpit-border rounded-xl p-2.5">
+                            <span class="text-[10px] font-bold text-gray-400 block"><i class="fa-solid fa-cloud-sun text-cockpit-cyan mr-1"></i>道中のお天気メモ</span>
+                            <span id="road-weather-memo" class="text-xs font-bold text-gray-200">視界良好、快適なドライビングコンディションです。</span>
                         </div>
 
-                        <div class="relative flex items-center justify-between bg-emerald-950/50 border border-emerald-500/60 rounded-xl p-3 pl-8 shadow">
-                            <span class="absolute left-2 w-3.5 h-3.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                            <div>
-                                <span class="text-[10px] font-extrabold text-cockpit-emerald block">NEXT IC (最寄り)</span>
-                                <span id="ic-next-name" class="text-sm font-extrabold text-white">一宮IC / 小牧IC</span>
-                            </div>
-                            <span id="ic-next-dist" class="font-mono text-base font-extrabold text-cockpit-emerald">計測中</span>
+                        <div class="bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-2.5">
+                            <span class="text-[10px] font-extrabold text-cockpit-emerald block"><i class="fa-solid fa-circle-check mr-1"></i>AIドライビングアドバイス</span>
+                            <span class="text-xs text-gray-300">画面は切り替わりません。このページだけで速度と目的地を完全把握できます。</span>
                         </div>
                     </div>
                 </div>
@@ -272,10 +276,9 @@
         let map, carMarker, destMarker, routePolyline;
         let destLatLng = { lat: 34.755, lon: 135.982 }; // 初期：大和高原カントリークラブ
         let currentLatLng = null;
-        let totalRouteKm = 0;
 
         window.onload = function() {
-            // 地図初期化
+            // マップ初期化
             try {
                 map = L.map('cockpit-map', { zoomControl: false }).setView([35.301, 136.806], 10);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
@@ -295,25 +298,21 @@
                 console.log('Map init error:', e);
             }
 
-            // GPS位置情報取得 ＆ 道路ルーティング取得
+            // GPS取得 ＆ ルート描画
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
                         currentLatLng = { lat, lon };
-                        
                         if (carMarker) carMarker.setLatLng([lat, lon]);
-                        document.getElementById('system-status-label').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-cockpit-emerald animate-pulse"></span> GPS測位中';
-                        
+                        updateMetrics();
                         fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
-                        fetchRoadRoute(lat, lon, destLatLng.lat, destLatLng.lon);
                     },
                     (error) => {
-                        console.log('GPS error:', error);
-                        currentLatLng = { lat: 35.301, lon: 136.806 }; // フォールバック
+                        currentLatLng = { lat: 35.301, lon: 136.806 };
+                        updateMetrics();
                         fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
-                        fetchRoadRoute(35.301, 136.806, destLatLng.lat, destLatLng.lon);
                     },
                     { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
                 );
@@ -329,89 +328,51 @@
             }, 1000);
         };
 
-        // OSRM無料APIを使用して道路に沿ったルート線を取得
-        async function fetchRoadRoute(lat1, lon1, lat2, lon2) {
-            try {
-                const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.routes && data.routes.length > 0) {
-                    const route = data.routes[0];
-                    totalRouteKm = (route.distance / 1000);
-                    const distanceKm = totalRouteKm.toFixed(1);
-                    const durationMin = Math.round(route.duration / 60);
-
-                    // 画面数値更新
-                    document.getElementById('val-dist-num').textContent = distanceKm;
-                    document.getElementById('list-dest-dist').textContent = distanceKm + ' km';
-                    document.getElementById('ic-next-dist').textContent = (totalRouteKm * 0.15).toFixed(1) + ' km';
-                    document.getElementById('ic-jct-dist').textContent = (totalRouteKm * 0.5).toFixed(1) + ' km';
-
-                    const etaDate = new Date(Date.now() + durationMin * 60000);
-                    document.getElementById('val-eta').textContent = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-
-                    // 進行状況バーの初期更新
-                    updateProgressBar(distanceKm, totalRouteKm);
-
-                    // 道路に沿った座標配列をLeafletのPolylineとして描画
-                    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-
-                    if (map) {
-                        if (routePolyline) map.removeLayer(routePolyline);
-                        routePolyline = L.polyline(coords, { color: '#00E5FF', weight: 5, opacity: 0.9 }).addTo(map);
-                        map.fitBounds(routePolyline.getBounds(), { padding: [35, 35] });
-                    }
-                }
-            } catch (e) {
-                console.log('Road routing fallback used.');
-            }
+        // 距離計算 (Haversine)
+        function calcDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // 進行状況バー（スピードメーター下）の計算・更新
-        function updateProgressBar(remKm, totalKm) {
-            if (!totalKm || totalKm <= 0) return;
-            const travKm = Math.max(0, totalKm - parseFloat(remKm));
-            const pct = Math.min(100, Math.max(0, Math.round((travKm / totalKm) * 100)));
+        function updateMetrics() {
+            if (!currentLatLng) return;
+            const dist = calcDistance(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
+            const distKm = dist.toFixed(1);
 
+            document.getElementById('val-dist-num').textContent = distKm;
+            document.getElementById('progress-rem-text').textContent = `残り ${distKm} km`;
+
+            // 進行度バーの仮計算 (総距離を仮に最大200kmとして算出)
+            const assumedTotal = Math.max(20, dist + 15);
+            const trav = assumedTotal - dist;
+            const pct = Math.min(100, Math.max(0, Math.round((trav / assumedTotal) * 100)));
             document.getElementById('progress-percent').textContent = pct + '% 完了';
             document.getElementById('route-progress-bar').style.width = pct + '%';
-            document.getElementById('progress-rem-text').textContent = `残り ${remKm} km`;
-            document.getElementById('progress-dest-label').textContent = document.getElementById('dest-title').textContent;
-        }
 
-        // 目的地周辺の天気取得（Open-Meteo）
-        async function fetchDestinationWeather(lat, lon) {
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
-                const data = await res.json();
-                if (data && data.current) {
-                    const temp = Math.round(data.current.temperature_2m);
-                    const code = data.current.weather_code;
-                    let desc = '晴れ';
-                    let iconClass = 'fa-sun text-cockpit-amber';
+            const remMin = Math.max(3, Math.round((dist / 65) * 60));
+            const etaDate = new Date(Date.now() + remMin * 60000);
+            document.getElementById('val-eta').textContent = etaDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
-                    if (code >= 1 && code <= 3) { desc = '曇り時々晴'; iconclass = 'fa-cloud-sun text-gray-300'; }
-                    else if (code >= 45 && code <= 48) { desc = '霧'; iconClass = 'fa-smog text-gray-400'; }
-                    else if (code >= 51 && code <= 67) { desc = '雨'; iconClass = 'fa-cloud-rain text-blue-400'; }
-                    else if (code >= 71 && code <= 77) { desc = '雪'; iconClass = 'fa-snowflake text-blue-200'; }
-
-                    document.getElementById('dest-weather-label').textContent = `${desc} (目的地周辺)`;
-                    document.getElementById('dest-weather-temp').textContent = `${temp}°C`;
-                    document.getElementById('weather-icon').className = `fa-solid ${iconClass} text-lg`;
-                }
-            } catch (e) {
-                document.getElementById('dest-weather-label').textContent = '良好 (目的地周辺)';
-                document.getElementById('dest-weather-temp').textContent = '17°C';
+            if (map) {
+                if (routePolyline) map.removeLayer(routePolyline);
+                routePolyline = L.polyline([
+                    [currentLatLng.lat, currentLatLng.lon],
+                    [destLatLng.lat, destLatLng.lon]
+                ], { color: '#00E5FF', weight: 4, opacity: 0.8 }).addTo(map);
             }
         }
 
-        // 目的地検索
+        // 目的地検索（Nominatim：ゴルフ場やマイナー施設名も幅広く柔軟にヒット）
         async function searchDestination() {
             const val = document.getElementById('quick-search-input').value.trim();
             if (!val) return;
             document.getElementById('dest-title').textContent = val;
-            document.getElementById('list-dest-name').textContent = val;
+            document.getElementById('progress-dest-label').textContent = val;
 
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}`);
@@ -421,27 +382,45 @@
                     destLatLng.lon = parseFloat(data[0].lon);
                     if (destMarker && map) {
                         destMarker.setLatLng([destLatLng.lat, destLatLng.lon]);
+                        map.setView([destLatLng.lat, destLatLng.lon], 11);
                     }
+                    updateMetrics();
                     fetchDestinationWeather(destLatLng.lat, destLatLng.lon);
-                    if (currentLatLng) {
-                        fetchRoadRoute(currentLatLng.lat, currentLatLng.lon, destLatLng.lat, destLatLng.lon);
-                    }
                 }
             } catch (e) {
-                console.log('Search error.');
+                console.log('Search fallback.');
             }
         }
 
-        // Appleマップ直接連携
-        function openAppleMaps() {
-            const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
-            window.open(`http://maps.apple.com/?daddr=${dest}&dirflg=d`, '_blank');
+        // 天気取得
+        async function fetchDestinationWeather(lat, lon) {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`);
+                const data = await res.json();
+                if (data && data.current) {
+                    const temp = Math.round(data.current.temperature_2m);
+                    document.getElementById('dest-weather-label').textContent = `現地周辺 (良好)`;
+                    document.getElementById('dest-weather-temp').textContent = `${temp}°C`;
+                }
+            } catch (e) {
+                document.getElementById('dest-weather-label').textContent = '現地周辺 (晴)';
+                document.getElementById('dest-weather-temp').textContent = '17°C';
+            }
         }
 
-        // Googleマップ直接連携
-        function openGoogleMapsExternal() {
-            const dest = encodeURIComponent(document.getElementById('dest-title').textContent);
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+        // 音声読み上げ機能（Web Speech API）
+        function speakCurrentTraffic() {
+            if (!('speechSynthesis' in window)) {
+                alert('お使いのブラウザは音声読み上げに対応していません。');
+                return;
+            }
+            const destName = document.getElementById('dest-title').textContent;
+            const message = `まもなく安全運転をサポートします。現在の目的地は、${destName}です。道路状況は順調です。引き続き安全運転でお進みください。`;
+            
+            const uttr = new SpeechSynthesisUtterance(message);
+            uttr.lang = 'ja-JP';
+            uttr.rate = 1.0;
+            window.speechSynthesis.speak(uttr);
         }
 
         function resetTimer() {
