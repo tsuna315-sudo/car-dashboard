@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO v3.1</title>
+    <title>DriveAssist OS - PRO v3.2 FIXED</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Leaflet.js 地図ライブラリ -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -43,27 +46,31 @@
         }
         .tabular-nums { font-variant-numeric: tabular-nums; }
         .glow-cyan { text-shadow: 0 0 18px rgba(0, 229, 255, 0.35); }
+        /* 地図のダークモード調整 */
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(95%); }
+        .leaflet-container { background: #090D16 !important; }
+        .leaflet-control-attribution { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-3 bg-cockpit-bg">
+<body class="min-h-screen flex flex-col justify-between p-2.5 sm:p-3.5 bg-cockpit-bg">
 
     <!-- ==================== トップステータスバー ==================== -->
-    <header class="w-full flex flex-wrap items-center justify-between gap-2 bg-cockpit-card border border-cockpit-border rounded-2xl px-4 py-2.5 shadow-lg">
-        <div class="flex items-center gap-3">
+    <header class="w-full flex flex-wrap items-center justify-between gap-2 bg-cockpit-card border border-cockpit-border rounded-2xl px-3.5 py-2.5 shadow-lg">
+        <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cockpit-cyan">
                 <i class="fa-solid fa-gauge-high text-lg"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.1</span></h1>
+                <h1 class="font-bold text-sm sm:text-base tracking-wider text-white">DRIVE ASSIST <span class="text-cockpit-cyan text-xs font-mono px-1.5 py-0.5 bg-cyan-950 rounded border border-cyan-800">PRO v3.2</span></h1>
                 <p class="text-[11px] text-cockpit-amber flex items-center gap-1.5 font-mono">
-                    <span id="connection-dot" class="w-2 h-2 rounded-full bg-cockpit-amber animate-pulse"></span>
-                    <span id="connection-status-text">OBD2 未接続 (待機中)</span>
+                    <span class="w-2 h-2 rounded-full bg-cockpit-amber animate-pulse"></span>
+                    OBD2 未接続 (待機中)
                 </p>
             </div>
         </div>
 
-        <!-- 目的地の自由検索バー -->
-        <div class="flex-1 max-w-md flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-3 py-1.5">
+        <!-- 目的地検索バー -->
+        <div class="flex-1 max-w-md flex items-center gap-1.5 bg-black/70 border border-cockpit-border rounded-xl px-2.5 py-1.5">
             <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs"></i>
             <input id="quick-search-input" type="text" value="新東名 浜松SA" placeholder="目的地を入力 (例: 名古屋駅, 浜松SA)" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none">
             <button onclick="searchDestination()" class="px-3 py-1 rounded-lg bg-cockpit-cyan text-black font-extrabold text-xs shrink-0 hover:bg-cyan-300 transition">
@@ -71,37 +78,18 @@
             </button>
         </div>
 
-        <!-- 外部マップ連携ボタン群 -->
-        <div class="flex items-center gap-2">
-            <button onclick="openAppleMaps()" class="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5" title="Appleマップでルート案内">
-                <i class="fa-solid fa-map-location-dot"></i><span class="hidden md:inline">Appleマップ</span>
+        <!-- 外部マップ連携 -->
+        <div class="flex items-center gap-1.5">
+            <button onclick="openAppleMaps()" class="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-700 text-blue-200 font-bold text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-map-location-dot"></i><span>Appleマップ</span>
             </button>
-            <button onclick="openGoogleMapsExternal()" class="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5" title="Googleマップでルート案内">
-                <i class="fa-solid fa-diamond-turn-right"></i><span class="hidden md:inline">Googleマップ</span>
+            <button onclick="openGoogleMapsExternal()" class="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-cockpit-emerald font-bold text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-diamond-turn-right"></i><span>Googleマップ</span>
             </button>
         </div>
     </header>
 
-    <!-- ==================== 道路情報バナー（大型確認ボタン ＆ 自動消去） ==================== -->
-    <div id="traffic-alert-banner" class="w-full my-2 bg-red-950/95 border-2 border-cockpit-danger rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-red-600/30 border border-red-500 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-triangle-exclamation text-cockpit-danger text-xl animate-bounce"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold px-2 py-0.5 rounded bg-red-600 text-white">交通障害検知</span>
-                    <span id="alert-countdown" class="text-xs font-mono text-red-300">あと 12秒 で自動消去</span>
-                </div>
-                <p class="font-bold text-sm text-white mt-0.5">前方ルート上：落下物・速度規制情報あり。安全に注意してください。</p>
-            </div>
-        </div>
-        <button onclick="dismissTrafficAlert()" class="px-6 py-3.5 rounded-xl bg-cockpit-danger hover:bg-red-500 text-white font-extrabold text-sm shadow-lg shrink-0 flex items-center gap-2">
-            <i class="fa-solid fa-check text-lg"></i> 確認して閉じる
-        </button>
-    </div>
-
-    <!-- ==================== メインコックピットグリッド ==================== -->
+    <!-- ==================== メイン2カラムコックピット ==================== -->
     <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 my-1">
 
         <!-- 【左カラム：速度計 ＆ OBD2テレメトリ (5カラム)】 -->
@@ -123,7 +111,7 @@
                     </div>
                     <div class="text-right w-36">
                         <div class="text-[11px] font-bold text-gray-400">ENGINE RPM</div>
-                        <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-rpm">0</span> <span class="text-[10px] text-gray-400">rpm</span></div>
+                        <div class="font-mono text-xl font-extrabold text-white tabular-nums"><span id="val-rpm">--</span> <span class="text-[10px] text-gray-400">rpm</span></div>
                         <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden mt-1">
                             <div id="bar-rpm" class="h-full bg-gradient-to-r from-cockpit-cyan to-cockpit-emerald" style="width: 0%;"></div>
                         </div>
@@ -131,7 +119,7 @@
                 </div>
             </div>
 
-            <!-- 6つのOBD2詳細テレメトリ (未接続時は "--" 表示) -->
+            <!-- OBD2詳細テレメトリ（未接続時はすべて "--"） -->
             <div class="grid grid-cols-2 gap-2.5">
                 <div class="bg-black/50 border border-cockpit-border rounded-2xl p-3 flex items-center justify-between">
                     <div><span class="text-xs font-bold text-gray-400 block">冷却水温</span></div>
@@ -170,10 +158,10 @@
             </div>
         </section>
 
-        <!-- 【右カラム：目的地 ＆ ルート進行状況プログレスバー ＆ ハイウェイICリスト (7カラム)】 -->
+        <!-- 【右カラム：地図ナビ ＆ ハイウェイIC順次案内 (7カラム)】 -->
         <section class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- 目的地バー -->
+            <!-- 上部：目的地バー -->
             <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <span class="text-[11px] font-extrabold text-cockpit-cyan uppercase"><i class="fa-solid fa-location-dot mr-1"></i>DESTINATION</span>
@@ -182,7 +170,7 @@
                 <div class="flex items-center gap-4 bg-black/60 border border-cockpit-border rounded-2xl px-4 py-2">
                     <div>
                         <span class="text-[10px] text-gray-400 block">到着予定 (ETA)</span>
-                        <span id="val-eta" class="font-mono text-xl font-extrabold text-cockpit-cyan">09:12</span>
+                        <span id="val-eta" class="font-mono text-xl font-extrabold text-cockpit-cyan">--:--</span>
                     </div>
                     <div class="border-l border-cockpit-border pl-3">
                         <span class="text-[10px] text-gray-400 block">残り距離</span>
@@ -191,76 +179,79 @@
                 </div>
             </div>
 
-            <!-- ルート進行状況インジケーター（プログレスバー） -->
-            <div class="bg-cockpit-card border border-cockpit-border rounded-2xl p-3.5 shadow-xl">
-                <div class="flex items-center justify-between text-xs mb-1.5">
-                    <span class="text-gray-300 font-bold flex items-center gap-1.5">
-                        <i class="fa-solid fa-route text-cockpit-cyan"></i> 現在地から目的地までのルート進行状況
-                    </span>
-                    <span id="progress-percent" class="font-mono font-extrabold text-cockpit-cyan">25% 完了</span>
-                </div>
+            <!-- 下部：地図 ＋ ハイウェイICリストの2分割 -->
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-[320px]">
                 
-                <div class="relative w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
-                    <div id="route-progress-bar" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-emerald-600 to-cockpit-emerald transition-all duration-500 shadow-[0_0_10px_#00E676]" style="width: 25%;"></div>
+                <!-- インタラクティブ地図 (6カラム) -->
+                <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl overflow-hidden relative shadow-2xl flex flex-col min-h-[220px]">
+                    <div id="cockpit-map" class="w-full h-full min-h-[220px] z-10"></div>
                 </div>
 
-                <div class="flex justify-between items-center text-[11px] text-gray-400 mt-1.5 font-mono">
-                    <span>出発: 現在地</span>
-                    <span id="progress-rem-text" class="text-white font-bold">残り 58.4 km</span>
-                    <span id="progress-dest-label">到着: 新東名 浜松SA</span>
-                </div>
-            </div>
-
-            <!-- ハイウェイIC・SA/PA 順番リスト -->
-            <div class="flex-1 bg-cockpit-card border border-cockpit-border rounded-3xl p-4 shadow-2xl flex flex-col justify-between min-h-[240px]">
-                <div class="flex items-center justify-between border-b border-cockpit-border pb-2 mb-3">
-                    <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-road"></i> ハイウェイIC順次案内
-                    </span>
-                    <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">連動中</span>
-                </div>
-
-                <div class="flex-1 flex flex-col justify-around space-y-2 relative py-1">
-                    <div class="absolute left-4 top-5 bottom-5 w-0.5 bg-emerald-600/50"></div>
-
-                    <div class="relative flex items-center justify-between bg-cyan-950/40 border border-cockpit-cyan/50 rounded-2xl p-3 pl-9">
-                        <span class="absolute left-2.5 w-3 h-3 rounded-full bg-cockpit-cyan border-2 border-black"></span>
-                        <div>
-                            <span class="text-[10px] font-bold text-cockpit-cyan block">目的地</span>
-                            <span id="list-dest-name" class="text-sm font-extrabold text-white">新東名 浜松SA</span>
-                        </div>
-                        <span class="font-mono text-base font-extrabold text-cockpit-cyan">58.4 km</span>
+                <!-- ハイウェイIC・SA/PA 順番リスト (6カラム) -->
+                <div class="md:col-span-6 bg-cockpit-card border border-cockpit-border rounded-3xl p-3.5 shadow-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-cockpit-border pb-2 mb-2">
+                        <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-road"></i> ハイウェイIC案内
+                        </span>
+                        <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">連動中</span>
                     </div>
 
-                    <div class="relative flex items-center justify-between bg-black/50 border border-cockpit-border rounded-2xl p-3 pl-9">
-                        <span class="absolute left-3 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <div>
-                            <span class="text-[10px] text-gray-400 block">JCT分岐</span>
-                            <span class="text-sm font-bold text-gray-200">三ヶ日 JCT</span>
-                        </div>
-                        <span class="font-mono text-base font-bold text-white">41.2 km</span>
-                    </div>
+                    <div class="flex-1 flex flex-col justify-around space-y-1.5 relative py-1">
+                        <div class="absolute left-3.5 top-4 bottom-4 w-0.5 bg-emerald-600/50"></div>
 
-                    <div class="relative flex items-center justify-between bg-emerald-950/50 border border-emerald-500/60 rounded-2xl p-3.5 pl-9 shadow">
-                        <span class="absolute left-2.5 w-3.5 h-3.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
-                        <div>
-                            <span class="text-[10px] font-extrabold text-cockpit-emerald block">NEXT IC (直近)</span>
-                            <span class="text-base font-extrabold text-white">岡崎 IC</span>
+                        <div class="relative flex items-center justify-between bg-cyan-950/40 border border-cockpit-cyan/50 rounded-xl p-2.5 pl-8">
+                            <span class="absolute left-2 w-3.5 h-3.5 rounded-full bg-cockpit-cyan border-2 border-black"></span>
+                            <div>
+                                <span class="text-[10px] font-bold text-cockpit-cyan block">目的地</span>
+                                <span id="list-dest-name" class="text-xs font-extrabold text-white">新東名 浜松SA</span>
+                            </div>
+                            <span class="font-mono text-sm font-extrabold text-cockpit-cyan">58.4 km</span>
                         </div>
-                        <span class="font-mono text-lg font-extrabold text-cockpit-emerald">3.2 km</span>
+
+                        <div class="relative flex items-center justify-between bg-black/50 border border-cockpit-border rounded-xl p-2.5 pl-8">
+                            <span class="absolute left-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block">JCT分岐</span>
+                                <span class="text-xs font-bold text-gray-200">三ヶ日 JCT</span>
+                            </div>
+                            <span class="font-mono text-sm font-bold text-white">41.2 km</span>
+                        </div>
+
+                        <div class="relative flex items-center justify-between bg-emerald-950/50 border border-emerald-500/60 rounded-xl p-3 pl-8 shadow">
+                            <span class="absolute left-2 w-3.5 h-3.5 rounded-full bg-cockpit-emerald animate-pulse"></span>
+                            <div>
+                                <span class="text-[10px] font-extrabold text-cockpit-emerald block">NEXT IC</span>
+                                <span class="text-sm font-extrabold text-white">岡崎 IC</span>
+                            </div>
+                            <span class="font-mono text-base font-extrabold text-cockpit-emerald">3.2 km</span>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </section>
     </main>
 
     <script>
         let timerSec = 0;
-        let alertTimer = null;
+        let map, carMarker;
 
         window.onload = function() {
-            startAlertCountdown();
-            // タイマー稼働
+            // Leaflet地図の初期化
+            try {
+                map = L.map('cockpit-map', { zoomControl: false }).setView([34.935, 137.22], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+
+                const carIcon = L.divIcon({
+                    html: '<div style="width:14px;height:14px;background:#00E676;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px #00E676;"></div>',
+                    className: ''
+                });
+                carMarker = L.marker([34.935, 137.22], { icon: carIcon }).addTo(map);
+            } catch (e) {
+                console.log('Map init error handled.');
+            }
+
+            // タイマー
             setInterval(() => {
                 timerSec++;
                 const h = String(Math.floor(timerSec / 3600)).padStart(2, '0');
@@ -270,31 +261,27 @@
             }, 1000);
         };
 
-        function startAlertCountdown() {
-            let sec = 12;
-            const banner = document.getElementById('traffic-alert-banner');
-            const countdownEl = document.getElementById('alert-countdown');
-            banner.classList.remove('hidden');
-
-            if (alertTimer) clearInterval(alertTimer);
-            alertTimer = setInterval(() => {
-                sec--;
-                if (countdownEl) countdownEl.textContent = `あと ${sec}秒 で自動消去`;
-                if (sec <= 0) dismissTrafficAlert();
-            }, 1000);
-        }
-
-        function dismissTrafficAlert() {
-            if (alertTimer) clearInterval(alertTimer);
-            document.getElementById('traffic-alert-banner').classList.add('hidden');
-        }
-
-        function searchDestination() {
+        // 目的地検索
+        async function searchDestination() {
             const val = document.getElementById('quick-search-input').value.trim();
             if (!val) return;
             document.getElementById('dest-title').textContent = val;
             document.getElementById('list-dest-name').textContent = val;
-            document.getElementById('progress-dest-label').textContent = `到着: ${val}`;
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    if (map) {
+                        map.setView([lat, lon], 11);
+                        carMarker.setLatLng([lat - 0.04, lon - 0.06]);
+                    }
+                }
+            } catch (e) {
+                console.log('Geo search fallback.');
+            }
         }
 
         function openGoogleMapsExternal() {
