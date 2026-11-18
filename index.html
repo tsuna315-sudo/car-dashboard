@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriveAssist OS - PRO Ultimate Production</title>
+    <title>DriveAssist OS - PRO Ultimate Production Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -161,7 +161,7 @@
         <!-- 【右側：OBD車両状態（実測回転数ライブ反映） ＆ 天気・道路モニター (6カラム)】 -->
         <section class="lg:col-span-6 flex flex-col justify-between gap-3.5">
 
-            <!-- 1. OBD2車両状態モニター（実測PIDパースによる正確なエンジン回転数RPM） -->
+            <!-- 1. OBD2車両状態モニター -->
             <div class="bg-cockpit-card border border-cockpit-border rounded-3xl p-5 shadow-2xl">
                 <div class="flex items-center justify-between border-b border-cockpit-border pb-3 mb-3">
                     <span class="text-sm sm:text-base font-extrabold text-emerald-400 flex items-center gap-2">
@@ -368,11 +368,15 @@
 
                 speakVoiceNotice("OBD2の接続が完了しました。車両状態の監視を開始します。");
 
-                // ELM327初期化
+                // 確実なELM327初期化シーケンス
                 await sendELMCommand("AT Z");
+                await sleep(200);
                 await sendELMCommand("AT E0");
+                await sleep(100);
                 await sendELMCommand("AT S0");
+                await sleep(100);
                 await sendELMCommand("AT H0");
+                await sleep(100);
                 
                 startRealOBDPolling();
 
@@ -391,17 +395,22 @@
             } catch (e) {}
         }
 
-        // Bluetooth通知データの受信バッファ処理 ＆ PID解析
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Bluetooth通知データの受信バッファ処理 ＆ 生データパース
         function handleOBDDataNotification(event) {
             const value = event.target.value;
             const decoder = new TextDecoder('utf-8');
             const chunk = decoder.decode(value);
             rxBuffer += chunk;
 
-            if (rxBuffer.includes('>')) {
-                const responses = rxBuffer.split('>');
-                for (let resp of responses) {
-                    parseELMResponse(resp.trim());
+            // プロンプトまたは改行区切りでレスポンスを解析
+            if (rxBuffer.includes('>') || rxBuffer.includes('\r')) {
+                const lines = rxBuffer.split(/[\r\n>]+/);
+                for (let line of lines) {
+                    parseELMResponse(line.trim());
                 }
                 rxBuffer = "";
             }
@@ -445,7 +454,7 @@
             }
         }
 
-        // 定期PIDポーリング
+        // PIDポーリング（回転数・水温・スロットル・吸気温を交互に要求）
         function startRealOBDPolling() {
             let pidSeq = 0;
             setInterval(async () => {
@@ -466,7 +475,7 @@
                     document.getElementById('val-voltage').textContent = "14.2";
                     document.getElementById('val-hv-soc').textContent = "76";
                 } catch (e) {}
-            }, 400);
+            }, 300);
         }
 
         // ==================== 進行度ゲージ完全同期・ルート計算 ====================
